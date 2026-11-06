@@ -15,8 +15,8 @@
     "check:bundle": "node scripts/check-bundle.mjs",
     "icons": "node scripts/build-icons.mjs",
     "setup:webkit": "bash scripts/setup-webkit-linux.sh",
-    "deploy:preview": "npm run build && wrangler pages deploy dist --project-name=meu-bem --branch=$(git branch --show-current)",
-    "deploy:prod": "npm run build && wrangler pages deploy dist --project-name=meu-bem --branch=main"
+    "release": "node scripts/release.mjs",
+    "serve:release": "node scripts/serve-release.mjs"
   },
   "type": "module",
   "private": true,
@@ -63,8 +63,7 @@
     "vite": "^8.3.6",
     "vite-plugin-pwa": "^2.0.0",
     "vitest": "^5.1.0",
-    "workbox-build": "^7.4.1",
-    "wrangler": "^4.158.0"
+    "workbox-build": "^7.4.1"
   },
   "engines": {
     "node": ">=22"

@@ -11,7 +11,7 @@
 - [x] Testes unitários e E2E WebKit (iPhone 15 Pro e iPhone SE), incluindo offline
 - [x] Orçamento de bundle no CI
 - [x] CI no GitHub Actions
-- [ ] Deploy de preview (depende de `npx wrangler login`)
+- [x] Publicado em https://financas.patricklopes.cloud por túnel Cloudflare
 - [ ] **Aceite:** instalar no iPhone, abrir offline e enviar o relatório do `/debug`
 
 ## Fase 1 · Núcleo

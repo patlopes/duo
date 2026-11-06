@@ -20,7 +20,8 @@ PWA de finanças para um casal que divide despesas proporcionalmente à renda. i
 - `npm run e2e`: Playwright WebKit sobre o build (rode `npm run build` antes)
 - `npm run lint`, `npm run typecheck`, `npm run check:bundle`
 - `npm run icons`: regenera `public/icons` a partir de `assets/icon/master.svg`
-- `npm run deploy:preview`, `npm run deploy:prod`: Cloudflare Pages
+- `npm run release`: publica o commit atual em https://financas.patricklopes.cloud (exige árvore limpa)
+- `npm run serve:release`: o servidor estático; em produção roda como `duo-site.service`
 - `npm run setup:webkit`: prepara o WebKit nesta máquina, que não tem sudo nem `libavif16`
 
 ## Arquitetura
@@ -34,6 +35,11 @@ PWA de finanças para um casal que divide despesas proporcionalmente à renda. i
 - `src/pwa`: service worker, instalação, diagnóstico
 - UI: Ionic React em modo `ios`, com react-router 6. Rotas em `App.tsx` e `features/shell/TabsLayout.tsx`.
 - Sem sync até a Fase 7, mas toda entidade já nasce com UUID v7, `createdAt`/`updatedAt`/`deletedAt` e `householdId`.
+
+## Publicação
+
+- Túnel `duo` (`~/.cloudflared/duo.yml`) → `127.0.0.1:4180` → `scripts/serve-release.mjs` → `../duo-release/current`. Serviços de usuário: `duo-site.service` e `duo-tunnel.service`.
+- `dist/` nunca vai para o ar sem `npm run release`. Depois que houver dados reais, publique só o que foi aceito.
 
 ## Armadilhas conhecidas
 
