@@ -59,6 +59,8 @@ export interface Settings {
   showOtherPersonal: boolean;
   /** How the couple splits shared bills: by income, or half each. */
   splitMode: SplitMode;
+  splitModeAt: string | null;
+  googleSheetId: string | null;
   lastSyncAt: string | null;
   lastSyncSentAt: string | null;
   mascots: boolean;
@@ -95,6 +97,8 @@ export const DEFAULT_SETTINGS: Settings = {
   deviceMemberIndex: 0,
   showOtherPersonal: false,
   splitMode: 'proportional',
+  splitModeAt: null,
+  googleSheetId: null,
   lastSyncAt: null,
   lastSyncSentAt: null,
   mascots: true,

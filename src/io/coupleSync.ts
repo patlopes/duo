@@ -24,7 +24,7 @@ export interface SyncPayload {
 }
 
 /** Personal spending stays on its owner's phone: only what the couple shares travels (spec 2.10). */
-function isPrivateRow(table: EntityTableName, row: Row): boolean {
+export function isPrivateRow(table: EntityTableName, row: Row): boolean {
   if (table !== 'transactions') return false;
   return row.splitRule === 'memberA' || row.splitRule === 'memberB';
 }

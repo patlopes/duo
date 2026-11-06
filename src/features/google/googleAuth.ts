@@ -2,6 +2,11 @@
 export const GOOGLE_CLIENT_ID =
   '758644931446-usjucdb4fvd3b0kc6e2alebr58bgllin.apps.googleusercontent.com';
 
+/** Google Picker's key, restricted to this site. Empty until it exists in the Google project. */
+export const GOOGLE_API_KEY = '';
+/** The project that owns the Client ID: the number at its start. */
+export const GOOGLE_PROJECT_NUMBER = '758644931446';
+
 // drive.file only reaches files the app itself created or was handed, never the rest of the Drive.
 const SCOPES = 'openid email https://www.googleapis.com/auth/drive.file';
 const GIS_URL = 'https://accounts.google.com/gsi/client';
@@ -91,31 +96,11 @@ export function requestToken(prompt: GooglePrompt): Promise<GoogleToken> {
   });
 }
 
-async function googleJson<T>(url: string, accessToken: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(url, {
-    ...init,
-    headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+export async function fetchEmail(accessToken: string): Promise<string> {
+  const response = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+    headers: { Authorization: `Bearer ${accessToken}` },
   });
   if (!response.ok) throw new Error(`O Google recusou o pedido (erro ${response.status}).`);
-  return (await response.json()) as T;
-}
-
-export async function fetchEmail(accessToken: string): Promise<string> {
-  const user = await googleJson<{ email?: string }>(
-    'https://www.googleapis.com/oauth2/v3/userinfo',
-    accessToken,
-  );
+  const user = (await response.json()) as { email?: string };
   return user.email ?? 'conta sem e-mail';
-}
-
-export async function createTestSheet(accessToken: string): Promise<string> {
-  const sheet = await googleJson<{ spreadsheetUrl: string }>(
-    'https://sheets.googleapis.com/v4/spreadsheets',
-    accessToken,
-    {
-      method: 'POST',
-      body: JSON.stringify({ properties: { title: 'Meu Bem (teste de conexão)' } }),
-    },
-  );
-  return sheet.spreadsheetUrl;
 }

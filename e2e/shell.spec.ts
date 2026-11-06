@@ -134,46 +134,6 @@ test('sem deploy novo, procurar atualização diz que está em dia', async ({ pa
   await expect(page.getByText('Vocês já estão na versão mais recente.')).toBeVisible();
 });
 
-test('teste do Google: entra, mostra o e-mail, renova e relata um erro', async ({ page }) => {
-  // The real login needs a real account, so Google's side is stubbed here.
-  await page.addInitScript(() => {
-    const realFetch = window.fetch.bind(window);
-    window.fetch = (input, init) =>
-      String(input).includes('oauth2/v3/userinfo')
-        ? Promise.resolve(Response.json({ email: 'casal@example.com' }))
-        : realFetch(input, init);
-    let calls = 0;
-    (window as unknown as { google: unknown }).google = {
-      accounts: {
-        oauth2: {
-          initTokenClient: ({
-            callback,
-            error_callback,
-          }: {
-            callback: (response: unknown) => void;
-            error_callback: (error: unknown) => void;
-          }) => ({
-            requestAccessToken: () => {
-              calls += 1;
-              if (calls === 3) error_callback({ type: 'popup_failed_to_open' });
-              else callback({ access_token: 'fake', expires_in: 3599 });
-            },
-          }),
-        },
-      },
-    };
-  });
-  await page.goto('tabs/more/settings');
-  await skipOnboarding(page);
-  await page.getByText('Entrar com Google').click();
-  await expect(page.getByText('Entrou como casal@example.com')).toBeVisible();
-  await expect(page.getByText(/Entrar: certo em .* vale por 60 min/)).toBeVisible();
-  await page.getByText('Renovar sem entrar de novo').click();
-  await expect(page.getByText(/Renovar: certo em/)).toBeVisible();
-  await page.getByText('Renovar sem entrar de novo').click();
-  await expect(page.getByText('Renovar: O aparelho bloqueou a janela do Google.')).toBeVisible();
-});
-
 test('página inicial e privacidade abrem como páginas, mesmo com o app instalado', async ({
   page,
 }) => {

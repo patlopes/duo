@@ -34,7 +34,7 @@ PWA que responde o que um casal precisa pagar **junto**: renda somada, contas, q
 - `src/ui`: design system
 - `src/pwa`: service worker, instalação, diagnóstico
 - UI: Ionic React em modo `ios`, com react-router 6. Rotas em `App.tsx` e `features/shell/TabsLayout.tsx`.
-- Sem servidor: os celulares trocam dados por mensagem (`src/io/coupleSync.ts`). Toda entidade já nasce com UUID v7, `createdAt`/`updatedAt`/`deletedAt` e `householdId`.
+- Sem servidor: os celulares usam a mesma planilha Google (`src/io/sheetSync.ts`) ou trocam mensagem (`src/io/coupleSync.ts`). Toda entidade já nasce com UUID v7, `createdAt`/`updatedAt`/`deletedAt` e `householdId`.
 
 ## Publicação
 
@@ -58,4 +58,6 @@ PWA que responde o que um casal precisa pagar **junto**: renda somada, contas, q
 - Rotas com `React.lazy` deixam a tela em branco e sem voltar enquanto carregam: páginas roteadas são importadas direto.
 - Voltar restaura a rolagem e esconde o large title: nos testes de navegação, confira o título da toolbar.
 - `page.route` não enxerga `fetch` da página com service worker ativo no WebKit: simule com `addInitScript`.
+- O escopo `drive.file` é por pessoa: quem foi convidado só acessa a planilha depois de escolhê-la no Google Picker. O token do Google só renova dentro de um toque, porque abre uma janela.
+- O client secret do Google nunca entra no repositório: o app não usa.
 - Abra os screenshots antes de dar uma fase por pronta: a tab bar branca no escuro e os rótulos quebrados passaram nos testes.

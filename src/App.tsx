@@ -8,6 +8,7 @@ import DebugPage from './features/debug/DebugPage';
 import { TabsLayout } from './features/shell/TabsLayout';
 import InstallGuidePage from './pwa/InstallGuidePage';
 import { UpdateToast } from './pwa/UpdateToast';
+import { SheetSyncHost } from './features/google/SheetSyncHost';
 import { useThemeSync } from './ui/useThemeSync';
 
 // Ionic's stack needs a routed page to exist the moment it is navigated to: a lazy one leaves a blank
@@ -55,6 +56,7 @@ export function App() {
           </IonRouterOutlet>
         </IonReactRouter>
         <Overlays />
+        <SheetSyncHost />
       </DataProvider>
       <UpdateToast />
     </IonApp>

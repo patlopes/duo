@@ -16,6 +16,7 @@ import { LargeTitlePage } from '../../ui/LargeTitlePage';
 import { Mascot } from '../../ui/Mascot';
 import { ChoiceChips, Field, Section } from '../../ui/parts';
 import { useToast } from '../../ui/useToast';
+import { SheetSection } from './SheetSection';
 
 /**
  * No server, on purpose: nothing can go offline or start charging. One phone sends a message, the
@@ -100,12 +101,13 @@ export default function SharePage() {
           )}
           <strong>As contas de vocês, nos dois celulares</strong>
           <span className="muted subhead">
-            Mandem uma mensagem de um para o outro. Sem conta, sem servidor: os dados só saem quando
-            vocês enviam.
+            Usem a mesma planilha do Google, ou mandem uma mensagem de um celular para o outro.
           </span>
         </div>
 
-        <Section title="1. Enviar">
+        <SheetSection />
+
+        <Section title="Sem conta Google: 1. Enviar">
           <div className="card stack rise" style={{ ['--i' as string]: 1 }}>
             <button type="button" className="primary-button" onClick={() => void send()}>
               <ShareNetworkIcon size={20} weight="bold" aria-hidden="true" />
@@ -131,7 +133,7 @@ export default function SharePage() {
           </div>
         </Section>
 
-        <Section title="2. Receber">
+        <Section title="Sem conta Google: 2. Receber">
           <div className="card stack rise" style={{ ['--i' as string]: 2 }}>
             <textarea
               className="textarea share-code"

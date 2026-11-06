@@ -28,7 +28,9 @@ Patrick pediu para seguir sem parar por fase até o app estar funcional. O statu
 - [x] Girafa e macaquinho, animações, tocar no gráfico abre o resumo
 - [x] Navegação testada com toques reais (`e2e/navigation.spec.ts`)
 - [x] Atualização detectada em segundos, com botão em Ajustes
-- [ ] Testar no iPhone: compartilhar, atualização com o app instalado
+- [x] Planilha do casal: criar, convidar, sincronizar sozinho, juntar (`src/io/sheetSync.ts`)
+- [ ] Chave do Google Picker, para quem foi convidado abrir a planilha
+- [ ] Testar no iPhone: login, renovação depois de 1 hora, Picker, atualização com o app instalado
 
 ## Fora, por ora
 

@@ -469,7 +469,8 @@ export async function undoDeleteTransaction(
   database: DuoDatabase = db,
 ): Promise<void> {
   await restore('transactions', ids, database);
-  if (recurrence) await database.recurrences.put(recurrence);
+  // A new date, or the other phone's copy of the deletion would win over this undo.
+  if (recurrence) await database.recurrences.put({ ...recurrence, updatedAt: nowIso() });
 }
 
 export async function toggleStatus(id: string, database: DuoDatabase = db): Promise<void> {

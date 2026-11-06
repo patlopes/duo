@@ -38,6 +38,8 @@ import { ProgressBar, Section, Sheet } from '../../ui/parts';
 import { useUi } from '../../ui/uiStore';
 import { useToast } from '../../ui/useToast';
 import { useDeleteBill } from '../bills/useDeleteBill';
+import { requestToken } from '../google/googleAuth';
+import { runSync, saveToken, useSheetState } from '../google/sheetSession';
 import { NamesSheet } from '../couple/CouplePage';
 import { LegacyBlocks } from './LegacyBlocks';
 
@@ -229,7 +231,12 @@ function SplitCard({
           <button
             type="button"
             aria-pressed={mode === 'proportional'}
-            onClick={() => void updateSettings({ splitMode: 'proportional' })}
+            onClick={() =>
+              void updateSettings({
+                splitMode: 'proportional',
+                splitModeAt: new Date().toISOString(),
+              })
+            }
           >
             Pela renda
             <small>
@@ -239,7 +246,9 @@ function SplitCard({
           <button
             type="button"
             aria-pressed={mode === 'equal'}
-            onClick={() => void updateSettings({ splitMode: 'equal' })}
+            onClick={() =>
+              void updateSettings({ splitMode: 'equal', splitModeAt: new Date().toISOString() })
+            }
           >
             Metade para cada
             <small>50% e 50%</small>
@@ -659,6 +668,8 @@ function FutureBlock({ data, month, now }: { data: Data; month: string; now: str
 
 function Notices({ data }: { data: Data }) {
   const installPrompt = usePwaStore((s) => s.installPrompt);
+  const presentToast = useToast();
+  const sheetStatus = useSheetState((s) => s.status);
   const [nowMs] = useState(() => Date.now());
   const dismissInstall = () => void updateSettings({ installGuideDismissed: true });
   const { lastChangeAt, lastBackupAt, backupReminderDays, backupReminderSnoozedAt } = data.settings;
@@ -678,8 +689,32 @@ function Notices({ data }: { data: Data }) {
     (!lastBackupAt || lastChangeAt > lastBackupAt) &&
     nowMs - reference >= days;
 
+  const signInToSync = () => {
+    // Straight from the tap: Safari blocks Google's window otherwise.
+    requestToken('').then(
+      (token) => {
+        saveToken(token);
+        void runSync();
+      },
+      (error: Error) =>
+        void presentToast({ message: error.message, duration: 3500, position: 'top' }),
+    );
+  };
+
   return (
     <>
+      {data.settings.googleSheetId && sheetStatus === 'needs-login' && (
+        <div className="notice rise">
+          <div>
+            <strong>Atualizar com a planilha</strong>
+            <br />
+            Toque para buscar o que mudou no outro celular.{' '}
+            <button type="button" className="link-button" onClick={signInToSync}>
+              Atualizar agora
+            </button>
+          </div>
+        </div>
+      )}
       {!data.settings.installGuideDismissed && shouldOfferInstallGuide() && (
         <div className="notice rise">
           <div>
