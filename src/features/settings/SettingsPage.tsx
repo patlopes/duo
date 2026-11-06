@@ -17,6 +17,7 @@ import { Field, Sheet } from '../../ui/parts';
 import { BRAND } from '../../brand';
 import { checkForUpdate } from '../../pwa/register';
 import { NamesSheet } from '../couple/CouplePage';
+import { GoogleTest } from '../google/GoogleTest';
 import { faceIdAvailable, hashPin, newSalt, registerFaceId } from './lock';
 import { useToast } from '../../ui/useToast';
 
@@ -210,6 +211,8 @@ export default function SettingsPage() {
           </IonItem>
         )}
       </GroupedList>
+
+      <GoogleTest />
 
       <GroupedList title="Casal">
         <IonItem button detail onClick={() => setNamesOpen(true)}>
