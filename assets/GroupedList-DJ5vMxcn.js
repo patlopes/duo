@@ -1,1 +1,0 @@
-import{R as e}from"./index-CS7Uej8n.js";import{r as t}from"./react-dom-Buiuewc4.js";var n={group:`_group_1e80w_1`,title:`_title_1e80w_5`,list:`_list_1e80w_12`},r=t();function i({title:t,children:i}){return(0,r.jsxs)(`section`,{className:n.group,children:[t&&(0,r.jsx)(`h2`,{className:n.title,children:t}),(0,r.jsx)(e,{inset:!0,className:n.list,children:i})]})}export{i as t};
