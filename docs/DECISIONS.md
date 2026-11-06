@@ -39,4 +39,5 @@ Cada decisão registra a data, a alternativa descartada e o motivo.
 | D-033 | 2026-11-06 | Dados entre os dois celulares por mensagem (`MEUBEM1:`), última alteração vence por linha, gastos privados de fora | Servidor ou conta própria |
 | D-034 | 2026-11-06 | Girafa e macaquinho em SVG próprio renderizado no `vectorcraft-cli`, porque o estúdio de IA do ArtCraft não está instalado | Aguardar o ArtCraft |
 | D-035 | 2026-11-06 | Atualização detectada por `version.json` e worker registrado com `?v=<build>`, porque o Pages guarda `sw.js` por 10 min | `registration.update()` sozinho |
+| D-037 | 2026-11-06 | Login Google só com escopos não sensíveis (`openid`, `email`, `drive.file`), publicado sem modo de teste; páginas `sobre.html` e `privacidade.html` no mesmo domínio | Escopo `spreadsheets`, que exigiria verificação completa |
 | D-036 | 2026-11-06 | Telas usadas por mais de uma aba existem sob cada aba, e o voltar fica na aba atual | Rotas únicas em `/tabs/more` |

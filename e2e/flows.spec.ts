@@ -358,6 +358,6 @@ test('funciona offline com dados: lança sem internet e mantém depois', async (
   await saveForm(page);
   await page.reload();
   await gotoTab(page, 'Lançamentos');
-  await expect(page.getByRole('button', { name: /Sem internet/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /^Sem internet/ })).toBeVisible();
   await context.setOffline(false);
 });

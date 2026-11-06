@@ -91,6 +91,14 @@ export function GoogleTest() {
           <IonLabel>Abrir a planilha</IonLabel>
         </IonItem>
       )}
+      <IonItem
+        href={`${import.meta.env.BASE_URL}privacidade.html`}
+        target="_blank"
+        rel="noreferrer"
+        detail
+      >
+        <IonLabel>Como o app usa sua conta Google</IonLabel>
+      </IonItem>
       {lines.length > 0 && (
         <IonItem lines="none">
           <IonLabel className="ion-text-wrap" aria-live="polite">

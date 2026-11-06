@@ -174,6 +174,22 @@ test('teste do Google: entra, mostra o e-mail, renova e relata um erro', async (
   await expect(page.getByText('Renovar: O aparelho bloqueou a janela do Google.')).toBeVisible();
 });
 
+test('página inicial e privacidade abrem como páginas, mesmo com o app instalado', async ({
+  page,
+}) => {
+  await page.goto('./');
+  await skipOnboarding(page);
+  await page.evaluate(() => navigator.serviceWorker.ready);
+  await page.reload();
+  await expectActiveTitle(page, 'Início');
+
+  await page.goto('sobre.html');
+  await expect(page.getByRole('heading', { name: 'Meu Bem', level: 1 })).toBeVisible();
+  await page.getByRole('link', { name: 'Leia a política de privacidade' }).click();
+  await expect(page.getByRole('heading', { name: 'Política de privacidade' })).toBeVisible();
+  await expect(page.getByText('Limited Use requirements')).toBeVisible();
+});
+
 test('abre sem internet depois da primeira visita', async ({ page, context }) => {
   await page.goto('./');
   await skipOnboarding(page);
