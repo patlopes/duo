@@ -1,0 +1,77 @@
+html,
+body {
+  height: 100dvh;
+  overflow: hidden;
+  overscroll-behavior: none;
+  touch-action: manipulation;
+  background: var(--color-bg);
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Inputs below 16px make iOS zoom the whole page on focus. */
+input,
+textarea,
+select {
+  font-size: max(16px, 1rem);
+}
+
+/* Without this a long label like "Planejamento" widens its tab and pushes the center + off-center. */
+ion-tab-button {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+/* The iOS tab bar label is 10pt on one line. */
+ion-tab-button ion-label {
+  font-size: 10px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* Ionic derives these two from its neutral steps, which read as muddy grays on our warm palette. */
+ion-segment-button {
+  --indicator-color: var(--color-segment-indicator);
+  --color-checked: var(--color-text);
+}
+
+/* The extra class beats the scoped selector where Ionic declares this variable. */
+ion-action-sheet.ios {
+  --button-background-selected: var(--color-surface);
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+.card {
+  background: var(--color-surface);
+  border-radius: var(--radius-card);
+  border: 0.5px solid var(--color-separator);
+  padding: var(--space-4);
+}
+
+.pressable {
+  transition: transform 120ms ease;
+}
+
+.pressable:active {
+  transform: scale(0.97);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pressable,
+  .pressable:active {
+    transition: none;
+    transform: none;
+  }
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

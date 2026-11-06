@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <!-- Placeholder until phase 6. Two people, one overlapping share; full bleed because iOS paints transparency black. -->
+  <rect width="1024" height="1024" fill="#6E2F6B"/>
+  <circle cx="400" cy="512" r="232" fill="#F7F3EE"/>
+  <circle cx="624" cy="512" r="232" fill="#E2A9D6"/>
+  <path d="M512 308.6 A232 232 0 0 1 512 715.4 A232 232 0 0 1 512 308.6 Z" fill="#B65FA9"/>
+</svg>

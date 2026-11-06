@@ -1,0 +1,40 @@
+.done {
+  margin: var(--space-2) var(--space-4) 0;
+  font-size: var(--type-subhead);
+  color: var(--text-income);
+}
+
+.steps {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin: var(--space-3) var(--space-4) var(--space-7);
+  padding: 0;
+  list-style: none;
+}
+
+.steps li {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+}
+
+.steps p {
+  margin: var(--space-1) 0 0;
+  font-size: var(--type-subhead);
+  line-height: 1.4;
+  color: var(--color-text-secondary);
+}
+
+.icon {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--color-primary-tint);
+  color: var(--color-primary);
+  font-size: 24px;
+}

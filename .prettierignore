@@ -1,0 +1,8 @@
+dist
+dev-dist
+coverage
+test-results
+playwright-report
+docs/screens
+public/icons
+package-lock.json

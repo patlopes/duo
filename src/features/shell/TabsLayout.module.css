@@ -1,0 +1,21 @@
+/* Same flex share as an ion-tab-button, so the five items stay evenly spaced. */
+.addSlot {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
+.add {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--add-button-size);
+  height: var(--add-button-size);
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}

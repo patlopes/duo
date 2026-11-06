@@ -1,0 +1,38 @@
+.install {
+  position: relative;
+  margin: var(--space-2) var(--space-4) 0;
+}
+
+.installText {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+  padding-right: var(--space-6);
+  font-size: var(--type-subhead);
+  line-height: 1.35;
+}
+
+.installText span {
+  color: var(--color-text-secondary);
+}
+
+.installCta {
+  margin: var(--space-1) 0 calc(var(--space-2) * -1) calc(var(--space-3) * -1);
+  font-size: var(--type-subhead);
+}
+
+.dismiss {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-secondary);
+}
