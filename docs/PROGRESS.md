@@ -20,7 +20,6 @@ Patrick pediu para seguir sem parar por fase até o app estar funcional. O statu
 
 ## Fora, por ora
 
-- [ ] Hospedagem definitiva sem depender do PC (D-027)
 - [ ] Fase 7: sync entre os dois celulares
 - [ ] Opcionais do spec: importador da planilha antiga e criptografia do IndexedDB
 
