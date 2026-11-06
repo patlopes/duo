@@ -1,0 +1,1 @@
+import{r as e}from"./rolldown-runtime-XKyaHtl9.js";import{J as t}from"./index-CS7Uej8n.js";import{n}from"./react-dom-Buiuewc4.js";var r=e(n(),1);function i(){let[e,n]=t();return(0,r.useCallback)(async t=>{await n(),await e(t)},[e,n])}export{i as t};

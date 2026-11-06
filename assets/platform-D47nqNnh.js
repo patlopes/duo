@@ -1,0 +1,1 @@
+function e(){return navigator.standalone===!0||matchMedia(`(display-mode: standalone)`).matches}function t(){let e=navigator.userAgent;return/iPhone|iPad|iPod/.test(e)||/Macintosh/.test(e)&&navigator.maxTouchPoints>1}function n(){return/Android/.test(navigator.userAgent)}function r(){return(t()||n())&&!e()}export{r as i,t as n,e as r,n as t};
