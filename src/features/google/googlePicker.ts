@@ -22,7 +22,8 @@ interface PickerApi {
   PickerBuilder: new () => PickerBuilder;
   DocsView: new (viewId: string) => {
     setMode(mode: string): unknown;
-    setQuery(q: string): unknown;
+    setQuery(query: string): unknown;
+    setFileIds(ids: string): unknown;
   };
   ViewId: { SPREADSHEETS: string };
   DocsViewMode: { LIST: string };
@@ -36,8 +37,6 @@ declare global {
 }
 
 const pickerApi = () => (window.google as unknown as { picker?: PickerApi } | undefined)?.picker;
-
-export const pickerConfigured = (): boolean => GOOGLE_API_KEY !== '';
 
 export async function loadPicker(): Promise<void> {
   if (pickerApi()) return;
@@ -58,17 +57,17 @@ export async function loadPicker(): Promise<void> {
  * The narrow Drive permission only reaches files the person picks, so the one who was invited has to
  * choose the shared sheet once. Resolves to its id, or null if they back out.
  */
-export function pickCoupleSheet(accessToken: string): Promise<string | null> {
+export function pickCoupleSheet(accessToken: string, sheetId?: string): Promise<string | null> {
   const api = pickerApi();
   if (!api) return Promise.reject(new Error('A janela do Google ainda está carregando.'));
   return new Promise((resolve) => {
     const view = new api.DocsView(api.ViewId.SPREADSHEETS);
     view.setMode(api.DocsViewMode.LIST);
-    view.setQuery(SHEET_TITLE);
-    const picker = new api.PickerBuilder()
+    if (sheetId) view.setFileIds(sheetId);
+    else view.setQuery(SHEET_TITLE);
+    const builder = new api.PickerBuilder()
       .addView(view)
       .setAppId(GOOGLE_PROJECT_NUMBER)
-      .setDeveloperKey(GOOGLE_API_KEY)
       .setOAuthToken(accessToken)
       .setOrigin(location.origin)
       .setSize(window.innerWidth, window.innerHeight)
@@ -81,8 +80,9 @@ export function pickCoupleSheet(accessToken: string): Promise<string | null> {
           picker.dispose();
           resolve(null);
         }
-      })
-      .build();
+      });
+    if (GOOGLE_API_KEY) builder.setDeveloperKey(GOOGLE_API_KEY);
+    const picker = builder.build();
     picker.setVisible(true);
   });
 }

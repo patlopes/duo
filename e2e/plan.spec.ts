@@ -36,7 +36,7 @@ test('marcar a transferência para a conjunta e desfazer', async ({ page }) => {
 });
 
 test('conta fixa aparece neste mês e nos próximos; pagar é um toque', async ({ page }) => {
-  await page.getByRole('button', { name: 'Conta', exact: false }).first().click();
+  await page.getByRole('button', { name: 'Conta', exact: true }).click();
   await page.getByRole('textbox', { name: 'Nome da conta' }).fill('Diarista');
   await page.getByRole('textbox', { name: 'Valor da conta' }).fill('40000');
   await page.locator('ion-modal').getByRole('button', { name: 'Salvar' }).click();

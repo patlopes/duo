@@ -61,6 +61,9 @@ export interface Settings {
   splitMode: SplitMode;
   splitModeAt: string | null;
   googleSheetId: string | null;
+  /** Who signed in as each member, as the shared sheet last said. */
+  googleEmails: [string | null, string | null];
+  googlePromptDismissed: boolean;
   lastSyncAt: string | null;
   lastSyncSentAt: string | null;
   mascots: boolean;
@@ -99,6 +102,8 @@ export const DEFAULT_SETTINGS: Settings = {
   splitMode: 'proportional',
   splitModeAt: null,
   googleSheetId: null,
+  googleEmails: [null, null],
+  googlePromptDismissed: false,
   lastSyncAt: null,
   lastSyncSentAt: null,
   mascots: true,

@@ -34,6 +34,7 @@ export default function SharePage() {
   );
   const [error, setError] = useState('');
   const [fallback, setFallback] = useState('');
+  const [showMessages, setShowMessages] = useState(false);
 
   const toast = (message: string) =>
     void presentToast({ message, duration: 2600, position: 'top' });
@@ -101,96 +102,110 @@ export default function SharePage() {
           )}
           <strong>As contas de vocês, nos dois celulares</strong>
           <span className="muted subhead">
-            Usem a mesma planilha do Google, ou mandem uma mensagem de um celular para o outro.
+            Os mesmos dados nos dois celulares e no computador, atualizando sozinhos.
           </span>
         </div>
 
         <SheetSection />
 
-        <Section title="Sem conta Google: 1. Enviar">
-          <div className="card stack rise" style={{ ['--i' as string]: 1 }}>
-            <button type="button" className="primary-button" onClick={() => void send()}>
-              <ShareNetworkIcon size={20} weight="bold" aria-hidden="true" />
-              &nbsp;Enviar para {other.name}
-            </button>
-            <span className="small muted">
-              {changedSinceSend
-                ? 'Você mudou coisas desde o último envio.'
-                : settings.lastSyncSentAt
-                  ? `Último envio: ${new Date(settings.lastSyncSentAt).toLocaleString('pt-BR')}`
-                  : 'Nada enviado ainda.'}{' '}
-              Gastos individuais não são enviados.
-            </span>
-            {fallback && (
-              <textarea
-                className="textarea share-code"
-                readOnly
-                aria-label="Mensagem para enviar"
-                value={fallback}
-                onFocus={(e) => e.target.select()}
-              />
-            )}
-          </div>
-        </Section>
-
-        <Section title="Sem conta Google: 2. Receber">
-          <div className="card stack rise" style={{ ['--i' as string]: 2 }}>
-            <textarea
-              className="textarea share-code"
-              aria-label="Mensagem recebida"
-              placeholder="Cole aqui a mensagem inteira."
-              value={pasted}
-              onChange={(e) => setPasted(e.target.value)}
-            />
-            <button
-              type="button"
-              className="secondary-button"
-              disabled={!pasted.trim()}
-              onClick={() => void read()}
-            >
-              <DownloadSimpleIcon size={20} weight="bold" aria-hidden="true" />
-              &nbsp;Ler mensagem
-            </button>
-            {error && (
-              <p className="tone-expense small" style={{ margin: 0 }}>
-                {error}
-              </p>
-            )}
-            {incoming && (
-              <>
-                {!incoming.preview.sameHousehold && (
-                  <Field label="Neste celular, quem é você?">
-                    <ChoiceChips
-                      ariaLabel="Quem é você"
-                      value={identity}
-                      onChange={setIdentity}
-                      options={[
-                        { value: '0', label: incoming.preview.theirNames[0] },
-                        { value: '1', label: incoming.preview.theirNames[1] },
-                      ]}
-                    />
-                  </Field>
-                )}
-                <p className="subhead" style={{ margin: 0 }}>
-                  {incoming.preview.newer > 0
-                    ? `${incoming.preview.newer} novidades chegando.`
-                    : 'Nada de novo nessa mensagem.'}
-                  {!incoming.preview.sameHousehold &&
-                    incoming.preview.localHasData &&
-                    ' O que já está neste celular continua aqui.'}
-                </p>
-                <button type="button" className="primary-button" onClick={() => void apply()}>
-                  {incoming.preview.sameHousehold ? 'Atualizar' : 'Juntar os dois celulares'}
+        <button
+          type="button"
+          className="link-button"
+          style={{ margin: 'var(--space-5) auto 0', display: 'block' }}
+          aria-expanded={showMessages}
+          onClick={() => setShowMessages(!showMessages)}
+        >
+          Prefiro sem conta Google: trocar por mensagem
+        </button>
+        {showMessages && (
+          <>
+            <Section title="1. Enviar">
+              <div className="card stack rise" style={{ ['--i' as string]: 1 }}>
+                <button type="button" className="primary-button" onClick={() => void send()}>
+                  <ShareNetworkIcon size={20} weight="bold" aria-hidden="true" />
+                  &nbsp;Enviar para {other.name}
                 </button>
-              </>
-            )}
-            {settings.lastSyncAt && (
-              <span className="small muted">
-                Última atualização recebida: {new Date(settings.lastSyncAt).toLocaleString('pt-BR')}
-              </span>
-            )}
-          </div>
-        </Section>
+                <span className="small muted">
+                  {changedSinceSend
+                    ? 'Você mudou coisas desde o último envio.'
+                    : settings.lastSyncSentAt
+                      ? `Último envio: ${new Date(settings.lastSyncSentAt).toLocaleString('pt-BR')}`
+                      : 'Nada enviado ainda.'}{' '}
+                  Gastos individuais não são enviados.
+                </span>
+                {fallback && (
+                  <textarea
+                    className="textarea share-code"
+                    readOnly
+                    aria-label="Mensagem para enviar"
+                    value={fallback}
+                    onFocus={(e) => e.target.select()}
+                  />
+                )}
+              </div>
+            </Section>
+
+            <Section title="2. Receber">
+              <div className="card stack rise" style={{ ['--i' as string]: 2 }}>
+                <textarea
+                  className="textarea share-code"
+                  aria-label="Mensagem recebida"
+                  placeholder="Cole aqui a mensagem inteira."
+                  value={pasted}
+                  onChange={(e) => setPasted(e.target.value)}
+                />
+                <button
+                  type="button"
+                  className="secondary-button"
+                  disabled={!pasted.trim()}
+                  onClick={() => void read()}
+                >
+                  <DownloadSimpleIcon size={20} weight="bold" aria-hidden="true" />
+                  &nbsp;Ler mensagem
+                </button>
+                {error && (
+                  <p className="tone-expense small" style={{ margin: 0 }}>
+                    {error}
+                  </p>
+                )}
+                {incoming && (
+                  <>
+                    {!incoming.preview.sameHousehold && (
+                      <Field label="Neste celular, quem é você?">
+                        <ChoiceChips
+                          ariaLabel="Quem é você"
+                          value={identity}
+                          onChange={setIdentity}
+                          options={[
+                            { value: '0', label: incoming.preview.theirNames[0] },
+                            { value: '1', label: incoming.preview.theirNames[1] },
+                          ]}
+                        />
+                      </Field>
+                    )}
+                    <p className="subhead" style={{ margin: 0 }}>
+                      {incoming.preview.newer > 0
+                        ? `${incoming.preview.newer} novidades chegando.`
+                        : 'Nada de novo nessa mensagem.'}
+                      {!incoming.preview.sameHousehold &&
+                        incoming.preview.localHasData &&
+                        ' O que já está neste celular continua aqui.'}
+                    </p>
+                    <button type="button" className="primary-button" onClick={() => void apply()}>
+                      {incoming.preview.sameHousehold ? 'Atualizar' : 'Juntar os dois celulares'}
+                    </button>
+                  </>
+                )}
+                {settings.lastSyncAt && (
+                  <span className="small muted">
+                    Última atualização recebida:{' '}
+                    {new Date(settings.lastSyncAt).toLocaleString('pt-BR')}
+                  </span>
+                )}
+              </div>
+            </Section>
+          </>
+        )}
       </div>
     </LargeTitlePage>
   );

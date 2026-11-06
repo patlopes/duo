@@ -1518,3 +1518,15 @@ ion-toggle[slot='start'] {
   flex: 1;
   min-width: 0;
 }
+
+.notice-text {
+  margin: 2px 0 var(--space-3);
+}
+.invite-gate {
+  z-index: 30000;
+}
+/* Google's file picker opens over the app, including over the invitation screen. */
+.picker-dialog-bg,
+.picker-dialog {
+  z-index: 40000 !important;
+}

@@ -12,6 +12,7 @@ const TABLES = Object.keys(ENTITY_SCHEMAS) as EntityTableName[];
 const MAX_CELL = 49_000;
 const SETTINGS_ROW = 'settings';
 const SPLIT_MODE_ID = 'splitMode';
+const emailRowId = (index: 0 | 1) => `email${index}`;
 
 /** Table, id, updatedAt, deletedAt, JSON: one spreadsheet row per app row, in the tab "dados". */
 export type SheetCells = [string, string, string, string, string];
@@ -172,28 +173,107 @@ export async function syncWithSheet(
 
   if (toUpdate.length) await store.update(toUpdate);
   if (toAppend.length) await store.append(toAppend);
+
+  const emails = emailsIn(remote);
+  if (emails[0] !== settings.googleEmails[0] || emails[1] !== settings.googleEmails[1]) {
+    await updateSettings({ googleEmails: emails }, database);
+  }
   return { received, sent: toUpdate.length + toAppend.length };
 }
 
-export interface SheetPreview {
-  sameHousehold: boolean;
-  names: [string, string];
+function emailsIn(remote: Map<string, RemoteRow>): [string | null, string | null] {
+  const read = (index: 0 | 1) => {
+    const json = remote.get(`${SETTINGS_ROW}/${emailRowId(index)}`)?.json;
+    try {
+      return json ? ((JSON.parse(json) as { email?: string }).email ?? null) : null;
+    } catch {
+      return null;
+    }
+  };
+  return [read(0), read(1)];
 }
 
-/** What joining would mean, read before anything on this phone changes. */
-export async function previewSheet(
-  store: SheetStore,
+/** Whoever already signed in as a member stays that member; a new account takes the free place. */
+function memberFor(emails: [string | null, string | null], email: string, preferred: 0 | 1): 0 | 1 {
+  if (emails[0] === email) return 0;
+  if (emails[1] === email) return 1;
+  if (!emails[preferred]) return preferred;
+  return preferred === 0 ? 1 : 0;
+}
+
+async function claimMember(store: SheetStore, index: 0 | 1, email: string): Promise<void> {
+  const remote = readRemote(await store.read());
+  const key = `${SETTINGS_ROW}/${emailRowId(index)}`;
+  const seen = remote.get(key);
+  if (emailsIn(remote)[index] === email) return;
+  const cells: SheetCells = [
+    SETTINGS_ROW,
+    emailRowId(index),
+    new Date().toISOString(),
+    '',
+    JSON.stringify({ email }),
+  ];
+  if (seen) await store.update([{ rowNumber: seen.rowNumber, cells }]);
+  else await store.append([cells]);
+}
+
+/** The parts of Google that connecting needs, so tests can run it without an account. */
+export interface CoupleDrive {
+  find(): Promise<string | null>;
+  create(): Promise<string>;
+  store(sheetId: string): SheetStore;
+}
+
+export type ConnectResult = 'created' | 'joined' | 'already';
+
+/**
+ * Signing in is the only step: it finds the couple's sheet and joins it, or creates one. An invite
+ * names the sheet directly. Nothing to choose, so a new computer just shows the data.
+ */
+export async function connectAccount(
+  drive: CoupleDrive,
+  email: string,
+  invitedSheetId: string | null,
   database: DuoDatabase = db,
-): Promise<SheetPreview> {
-  const payload = payloadOf(await store.read());
+): Promise<ConnectResult> {
+  const settings = await readSettings(database);
+  const sheetId = invitedSheetId ?? settings.googleSheetId ?? (await drive.find());
+
+  const start = async (id: string, store: SheetStore): Promise<ConnectResult> => {
+    await syncWithSheet(store, database);
+    await claimMember(store, settings.deviceMemberIndex, email);
+    await updateSettings({ googleSheetId: id }, database);
+    await syncWithSheet(store, database);
+    return 'created';
+  };
+
+  if (!sheetId) {
+    const id = await drive.create();
+    return start(id, drive.store(id));
+  }
+
+  const store = drive.store(sheetId);
+  const values = await store.read();
+  const payload = payloadOf(values);
   const household = payload.tables.households?.[0];
-  if (!household) throw new Error('Essa planilha ainda está vazia. Abra o app de quem a criou.');
+  if (!household) return start(sheetId, store);
+
+  const emails = emailsIn(readRemote(values));
   const local = await database.households.toCollection().first();
-  const ids = household.memberIds as string[];
-  const names = ids.map((id) =>
-    String(payload.tables.members?.find((m) => m.id === id)?.name ?? ''),
-  ) as [string, string];
-  return { sameHousehold: local?.id === household.id, names };
+  // An invitation is for the person who isn't the one inviting.
+  const preferred: 0 | 1 = invitedSheetId ? (emails[0] ? 1 : 0) : settings.deviceMemberIndex;
+  const index = memberFor(emails, email, preferred);
+
+  if (local?.id === household.id) {
+    await claimMember(store, index, email);
+    await updateSettings({ googleSheetId: sheetId, onboarded: true }, database);
+    await syncWithSheet(store, database);
+    return 'already';
+  }
+  await joinSheet(store, index, sheetId, database);
+  await claimMember(store, index, email);
+  await syncWithSheet(store, database);
+  return 'joined';
 }
 
 function payloadOf(values: string[][]): SyncPayload {

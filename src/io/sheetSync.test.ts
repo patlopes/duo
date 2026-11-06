@@ -9,12 +9,13 @@ import {
   upsert,
   type TransactionDraft,
 } from '../db/ops';
-import type { Member } from '../schemas/entities';
+import type { Account, Member, SalaryPlan } from '../schemas/entities';
 import {
+  connectAccount,
   joinSheet,
   OtherHouseholdError,
-  previewSheet,
   syncWithSheet,
+  type CoupleDrive,
   type SheetCells,
   type SheetStore,
 } from './sheetSync';
@@ -96,10 +97,6 @@ describe('planilha do casal', () => {
   it('quem entra recebe tudo e o que já tinha vai para o outro celular', async () => {
     await bill(phoneA, 'Aluguel');
     await bill(phoneB, 'Internet');
-
-    const preview = await previewSheet(sheet, phoneB).catch(() => null);
-    expect(preview).toBeNull(); // Nothing in the sheet yet: nobody can join it.
-
     await linkBoth();
     expect(await names(phoneB)).toEqual(['Aluguel', 'Internet']);
 
@@ -107,15 +104,6 @@ describe('planilha do casal', () => {
     expect(await names(phoneA)).toEqual(['Aluguel', 'Internet']);
     expect((await readSettings(phoneB)).googleSheetId).toBe('sheet-1');
     expect((await readSettings(phoneB)).deviceMemberIndex).toBe(1);
-  });
-
-  it('mostra os nomes antes de juntar, sem mudar nada no celular', async () => {
-    await syncWithSheet(sheet, phoneA);
-    const before = await phoneB.households.toArray();
-    const preview = await previewSheet(sheet, phoneB);
-    expect(preview.sameHousehold).toBe(false);
-    expect(preview.names[0]).toBe('Patrick');
-    expect(await phoneB.households.toArray()).toEqual(before);
   });
 
   it('repetir a sincronização não escreve nada', async () => {
@@ -210,5 +198,89 @@ describe('planilha do casal', () => {
     await syncWithSheet(sheet, phoneA);
     await expect(syncWithSheet(sheet, phoneB)).rejects.toBeInstanceOf(OtherHouseholdError);
     expect(await names(phoneB)).toEqual([]);
+  });
+
+  describe('entrar com o Google', () => {
+    const drive = (found: string | null): CoupleDrive & { created: number } => ({
+      created: 0,
+      async find() {
+        return found;
+      },
+      async create() {
+        this.created += 1;
+        return 'new-sheet';
+      },
+      store: () => sheet,
+    });
+
+    it('sem planilha, cria uma e sobe os dados', async () => {
+      await bill(phoneA, 'Aluguel');
+      const google = drive(null);
+      expect(await connectAccount(google, 'a@x.com', null, phoneA)).toBe('created');
+      expect(google.created).toBe(1);
+      expect((await readSettings(phoneA)).googleSheetId).toBe('new-sheet');
+      expect(JSON.stringify(sheet.rows)).toContain('Aluguel');
+    });
+
+    it('num aparelho novo com a mesma conta, é só entrar e ver os dados', async () => {
+      await bill(phoneA, 'Aluguel');
+      await connectAccount(drive(null), 'a@x.com', null, phoneA);
+
+      const google = drive('new-sheet');
+      expect(await connectAccount(google, 'a@x.com', null, phoneB)).toBe('joined');
+      expect(google.created).toBe(0);
+      expect(await names(phoneB)).toEqual(['Aluguel']);
+      const settings = await readSettings(phoneB);
+      expect(settings.onboarded).toBe(true);
+      expect(settings.deviceMemberIndex).toBe(0);
+      expect(settings.googleSheetId).toBe('new-sheet');
+    });
+
+    it('quem abre o convite vira a outra pessoa do casal, sem perguntar', async () => {
+      await connectAccount(drive(null), 'a@x.com', null, phoneA);
+      expect(await connectAccount(drive(null), 'b@x.com', 'new-sheet', phoneB)).toBe('joined');
+      expect((await readSettings(phoneB)).deviceMemberIndex).toBe(1);
+
+      await syncWithSheet(sheet, phoneA);
+      expect((await readSettings(phoneA)).googleEmails).toEqual(['a@x.com', 'b@x.com']);
+    });
+
+    it('um aparelho novo não apaga o saldo nem o salário de quem já usava', async () => {
+      const jointA = await ensureJointAccount(phoneA);
+      await upsert<Account>('accounts', { ...jointA, initialBalanceCents: 500_000 }, phoneA);
+      const [memberA] = await phoneA.members.toArray();
+      await upsert<SalaryPlan>(
+        'salaryPlans',
+        { memberId: memberA!.id, amountCents: 900_000, payDay: 5, startMonth: '2026-11' },
+        phoneA,
+      );
+      await connectAccount(drive(null), 'a@x.com', null, phoneA);
+
+      // Created afterwards, so a plain "newest wins" would have let these defaults overwrite the real ones.
+      await tick();
+      await ensureJointAccount(phoneB);
+      const [memberB] = await phoneB.members.toArray();
+      await upsert<SalaryPlan>(
+        'salaryPlans',
+        { memberId: memberB!.id, amountCents: 1, payDay: 5, startMonth: '2026-11' },
+        phoneB,
+      );
+      await connectAccount(drive('new-sheet'), 'a@x.com', null, phoneB);
+      await syncWithSheet(sheet, phoneA);
+
+      for (const phone of [phoneA, phoneB]) {
+        const joint = (await phone.accounts.toArray()).filter((a) => a.type === 'joint');
+        expect(joint.map((a) => a.initialBalanceCents)).toEqual([500_000]);
+        const plans = (await phone.salaryPlans.toArray()).filter((p) => !p.deletedAt);
+        expect(plans.map((p) => p.amountCents)).toEqual([900_000]);
+      }
+    });
+
+    it('entrar de novo no mesmo aparelho não cria nada', async () => {
+      await connectAccount(drive(null), 'a@x.com', null, phoneA);
+      const google = drive(null);
+      expect(await connectAccount(google, 'a@x.com', null, phoneA)).toBe('already');
+      expect(google.created).toBe(0);
+    });
   });
 });

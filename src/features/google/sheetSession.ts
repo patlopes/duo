@@ -1,11 +1,18 @@
 import { create } from 'zustand';
 import { db, readSettings } from '../../db/database';
-import { OtherHouseholdError, syncWithSheet } from '../../io/sheetSync';
-import { GoogleApiError, sheetStore } from './googleSheets';
-import type { GoogleToken } from './googleAuth';
+import {
+  connectAccount,
+  OtherHouseholdError,
+  syncWithSheet,
+  type ConnectResult,
+} from '../../io/sheetSync';
+import { fetchEmail, type GoogleToken } from './googleAuth';
+import { loadPicker, pickCoupleSheet } from './googlePicker';
+import { coupleDrive, GoogleApiError, sheetStore } from './googleSheets';
 
 const TOKEN_KEY = 'duo-google-token';
 const SYNCED_KEY = 'duo-sheet-synced-at';
+const INVITE_KEY = 'duo-invite';
 const EXPIRY_MARGIN_MS = 60_000;
 
 export type SheetStatus = 'idle' | 'syncing' | 'needs-login' | 'offline' | 'no-access' | 'error';
@@ -14,7 +21,26 @@ interface SheetState {
   status: SheetStatus;
   message: string;
   syncedAt: string | null;
+  invite: string | null;
   set: (patch: Partial<Pick<SheetState, 'status' | 'message' | 'syncedAt'>>) => void;
+  clearInvite: () => void;
+}
+
+/** Read before the router runs, which would drop the query. Kept in case the page reloads mid-login. */
+function readInvite(): string | null {
+  const url = new URL(location.href);
+  const fromLink = url.searchParams.get('convite');
+  try {
+    if (fromLink) {
+      sessionStorage.setItem(INVITE_KEY, fromLink);
+      url.searchParams.delete('convite');
+      history.replaceState(null, '', url);
+      return fromLink;
+    }
+    return sessionStorage.getItem(INVITE_KEY);
+  } catch {
+    return fromLink;
+  }
 }
 
 function readSyncedAt(): string | null {
@@ -29,7 +55,16 @@ export const useSheetState = create<SheetState>((set) => ({
   status: 'idle',
   message: '',
   syncedAt: readSyncedAt(),
+  invite: readInvite(),
   set: (patch) => set(patch),
+  clearInvite: () => {
+    try {
+      sessionStorage.removeItem(INVITE_KEY);
+    } catch {
+      // Nothing stored, nothing to clear.
+    }
+    set({ invite: null });
+  },
 }));
 
 /** Kept across launches, or every reopen would ask for Google again within the token's hour. */
@@ -119,4 +154,30 @@ export function runSync(): Promise<void> {
     }
   });
   return running;
+}
+
+/**
+ * After signing in: the whole setup. A person invited to a sheet may still need to pick it once,
+ * because Google only lets the app reach files the person handed to it.
+ */
+export async function connectSignedIn(token: GoogleToken): Promise<ConnectResult | null> {
+  saveToken(token);
+  const invite = useSheetState.getState().invite;
+  const email = await fetchEmail(token.accessToken);
+  const drive = coupleDrive(token.accessToken);
+  let result: ConnectResult | null;
+  try {
+    result = await connectAccount(drive, email, invite);
+  } catch (error) {
+    const blocked =
+      invite && error instanceof GoogleApiError && (error.status === 403 || error.status === 404);
+    if (!blocked) throw error;
+    await loadPicker();
+    const picked = await pickCoupleSheet(token.accessToken, invite);
+    if (!picked) return null;
+    result = await connectAccount(drive, email, picked);
+  }
+  useSheetState.getState().clearInvite();
+  void runSync();
+  return result;
 }

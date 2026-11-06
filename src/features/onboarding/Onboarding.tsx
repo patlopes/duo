@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { BRAND } from '../../brand';
 import { useData } from '../../db/DataContext';
+import { GoogleButton } from '../google/GoogleButton';
 import { ensureJointAccount, ensurePersonalAccount, updateSettings, upsert } from '../../db/ops';
 import { monthOf, today } from '../../domain/months';
 import type { Member, SalaryPlan } from '../../schemas/entities';
@@ -149,9 +150,15 @@ export default function Onboarding() {
         ))}
       </div>
       {onSlide ? (
-        <button type="button" className="primary-button" onClick={() => setStep(step + 1)}>
-          Continuar
-        </button>
+        <div className="stack">
+          <GoogleButton
+            // Found a sheet: the data arrived and this screen closes. Otherwise it still needs the names.
+            onDone={(result) => result === 'created' && setStep(SLIDES.length)}
+          />
+          <button type="button" className="secondary-button" onClick={() => setStep(step + 1)}>
+            Continuar sem conta
+          </button>
+        </div>
       ) : (
         <button type="button" className="primary-button" onClick={() => void finish(true)}>
           Começar

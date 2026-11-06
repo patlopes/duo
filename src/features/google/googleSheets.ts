@@ -1,4 +1,4 @@
-import type { SheetCells, SheetStore } from '../../io/sheetSync';
+import type { CoupleDrive, SheetCells, SheetStore } from '../../io/sheetSync';
 
 const SHEETS = 'https://sheets.googleapis.com/v4/spreadsheets';
 const DRIVE = 'https://www.googleapis.com/drive/v3/files';
@@ -36,6 +36,14 @@ async function writeRanges(
     accessToken,
     post({ valueInputOption: 'RAW', data }),
   );
+}
+
+export function coupleDrive(accessToken: string): CoupleDrive {
+  return {
+    find: () => findCoupleSheet(accessToken),
+    create: () => createCoupleSheet(accessToken),
+    store: (sheetId) => sheetStore(accessToken, sheetId),
+  };
 }
 
 export function sheetStore(accessToken: string, sheetId: string): SheetStore {
@@ -100,13 +108,29 @@ export async function createCoupleSheet(accessToken: string): Promise<string> {
   return spreadsheetId;
 }
 
+export const inviteLinkFor = (sheetId: string): string =>
+  `${location.origin}${import.meta.env.BASE_URL}?convite=${sheetId}`;
+
+/** With drive.file this only sees sheets this account created or opened through the app. */
+export async function findCoupleSheet(accessToken: string): Promise<string | null> {
+  const query = encodeURIComponent(
+    `name='${SHEET_TITLE}' and mimeType='application/vnd.google-apps.spreadsheet' and trashed=false`,
+  );
+  const fields = encodeURIComponent('files(id,ownedByMe,modifiedTime)');
+  const { files = [] } = await call<{
+    files?: { id: string; ownedByMe?: boolean; modifiedTime?: string }[];
+  }>(`${DRIVE}?q=${query}&fields=${fields}&orderBy=modifiedTime%20desc`, accessToken);
+  // A sheet someone shared is the couple's. One's own could be a leftover from before the invite.
+  return (files.find((f) => f.ownedByMe === false) ?? files[0])?.id ?? null;
+}
+
 export async function inviteToSheet(
   accessToken: string,
   sheetId: string,
   email: string,
 ): Promise<void> {
   const message = encodeURIComponent(
-    'Abra o Meu Bem, vá em Mais → Compartilhar e toque em "Abrir a planilha do casal".',
+    `Vamos usar as mesmas contas no Meu Bem? Abra este link no celular: ${inviteLinkFor(sheetId)}`,
   );
   await call(
     `${DRIVE}/${sheetId}/permissions?sendNotificationEmail=true&emailMessage=${message}`,

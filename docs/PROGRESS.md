@@ -29,7 +29,8 @@ Patrick pediu para seguir sem parar por fase até o app estar funcional. O statu
 - [x] Navegação testada com toques reais (`e2e/navigation.spec.ts`)
 - [x] Atualização detectada em segundos, com botão em Ajustes
 - [x] Planilha do casal: criar, convidar, sincronizar sozinho, juntar (`src/io/sheetSync.ts`)
-- [ ] Chave do Google Picker, para quem foi convidado abrir a planilha
+- [x] Entrar com Google na primeira tela e na Início; aparelho novo vê os dados sem outro passo; convite por link
+- [ ] Chave do Google Picker, se a janela de escolha não abrir sem ela
 - [ ] Testar no iPhone: login, renovação depois de 1 hora, Picker, atualização com o app instalado
 
 ## Fora, por ora

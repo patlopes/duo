@@ -8,6 +8,7 @@ import DebugPage from './features/debug/DebugPage';
 import { TabsLayout } from './features/shell/TabsLayout';
 import InstallGuidePage from './pwa/InstallGuidePage';
 import { UpdateToast } from './pwa/UpdateToast';
+import { InviteGate } from './features/google/InviteGate';
 import { SheetSyncHost } from './features/google/SheetSyncHost';
 import { useThemeSync } from './ui/useThemeSync';
 
@@ -36,6 +37,7 @@ function Overlays() {
       <TransactionFormHost />
       <BillFormHost />
       {!settings.onboarded && <Onboarding />}
+      <InviteGate />
       {settings.lockEnabled && <LockGate />}
     </Suspense>
   );

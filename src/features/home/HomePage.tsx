@@ -39,8 +39,10 @@ import { useUi } from '../../ui/uiStore';
 import { useToast } from '../../ui/useToast';
 import { useDeleteBill } from '../bills/useDeleteBill';
 import { requestToken } from '../google/googleAuth';
+import { GoogleButton } from '../google/GoogleButton';
 import { runSync, saveToken, useSheetState } from '../google/sheetSession';
 import { NamesSheet } from '../couple/CouplePage';
+import { InviteSheet } from '../share/InviteSheet';
 import { LegacyBlocks } from './LegacyBlocks';
 
 export function planDataOf(data: Data): PlanData {
@@ -670,6 +672,7 @@ function Notices({ data }: { data: Data }) {
   const installPrompt = usePwaStore((s) => s.installPrompt);
   const presentToast = useToast();
   const sheetStatus = useSheetState((s) => s.status);
+  const [inviting, setInviting] = useState(false);
   const [nowMs] = useState(() => Date.now());
   const dismissInstall = () => void updateSettings({ installGuideDismissed: true });
   const { lastChangeAt, lastBackupAt, backupReminderDays, backupReminderSnoozedAt } = data.settings;
@@ -701,8 +704,49 @@ function Notices({ data }: { data: Data }) {
     );
   };
 
+  const me = data.settings.deviceMemberIndex;
+  const other = data.members[me === 0 ? 1 : 0];
+  const dismissPrompt = () => void updateSettings({ googlePromptDismissed: true });
+  const closeButton = (
+    <button
+      type="button"
+      className="icon-button"
+      aria-label="Dispensar aviso da conta Google"
+      onClick={dismissPrompt}
+    >
+      <XIcon size={18} aria-hidden="true" />
+    </button>
+  );
+
   return (
     <>
+      {data.settings.onboarded &&
+        !data.settings.googleSheetId &&
+        !data.settings.googlePromptDismissed && (
+          <div className="notice rise">
+            <div>
+              <strong>Vejam tudo nos dois celulares e no computador</strong>
+              <p className="notice-text">Entre com o Google e os dados atualizam sozinhos.</p>
+              <GoogleButton />
+            </div>
+            {closeButton}
+          </div>
+        )}
+      {data.settings.googleSheetId &&
+        !data.settings.googleEmails[me === 0 ? 1 : 0] &&
+        !data.settings.googlePromptDismissed && (
+          <div className="notice rise">
+            <div>
+              <strong>Agora falta {other.name}</strong>
+              <p className="notice-text">Com um link, {other.name} passa a ver as mesmas contas.</p>
+              <button type="button" className="primary-button" onClick={() => setInviting(true)}>
+                Convidar {other.name}
+              </button>
+            </div>
+            {closeButton}
+          </div>
+        )}
+      {inviting && <InviteSheet onClose={() => setInviting(false)} />}
       {data.settings.googleSheetId && sheetStatus === 'needs-login' && (
         <div className="notice rise">
           <div>

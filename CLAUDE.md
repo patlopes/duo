@@ -59,5 +59,6 @@ PWA que responde o que um casal precisa pagar **junto**: renda somada, contas, q
 - Voltar restaura a rolagem e esconde o large title: nos testes de navegação, confira o título da toolbar.
 - `page.route` não enxerga `fetch` da página com service worker ativo no WebKit: simule com `addInitScript`.
 - O escopo `drive.file` é por pessoa: quem foi convidado só acessa a planilha depois de escolhê-la no Google Picker. O token do Google só renova dentro de um toque, porque abre uma janela.
+- Ao juntar um aparelho, a cópia da planilha vence as linhas padrão dele (conta conjunta, categorias, salário): "a mais nova vence" apagaria o saldo real com um padrão recém-criado.
 - O client secret do Google nunca entra no repositório: o app não usa.
 - Abra os screenshots antes de dar uma fase por pronta: a tab bar branca no escuro e os rótulos quebrados passaram nos testes.

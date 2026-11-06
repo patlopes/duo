@@ -184,6 +184,11 @@ async function adoptHousehold(
     'toAccountId',
     'paymentAccountId',
   ];
+  const hasSalaryTwin = (row: Row) =>
+    (payload.tables.salaryPlans ?? []).some(
+      (plan) =>
+        !plan.deletedAt && plan.memberId === row.memberId && plan.startMonth === row.startMonth,
+    );
   const remap = (row: Row): Row => {
     const next: Row = { ...row, householdId: theirs.id, id: idMap.get(row.id) ?? row.id };
     for (const field of REF_FIELDS) {
@@ -208,8 +213,10 @@ async function adoptHousehold(
         const rows = await table.toArray();
         await table.clear();
         if (t === 'households' || t === 'members') continue;
-        // Rows merged onto a twin keep the twin's id, so only the first of each survives this bulk put.
-        await table.bulkPut(rows.map(remap));
+        // A row with a twin is the same real thing, and the other side's copy is the one with history:
+        // a joint account just created here must not reset the real one's balance for being newer.
+        const kept = rows.filter((row) => !idMap.has(row.id)).map(remap);
+        await table.bulkPut(t === 'salaryPlans' ? kept.filter((row) => !hasSalaryTwin(row)) : kept);
       }
     },
   );
