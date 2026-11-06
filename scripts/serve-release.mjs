@@ -49,6 +49,15 @@ async function locate(urlPath) {
   return { file: shell, size: (await stat(shell)).size };
 }
 
+function cacheControl(pathname) {
+  // Cloudflare rewrites `no-cache` on .js files to its 4 h browser TTL, but it keeps `no-store`.
+  // A stale sw.js is how phones would miss a new version, so this one must never be cached.
+  if (pathname === '/sw.js') return 'no-store';
+  // Hashed files never change.
+  if (pathname.startsWith('/assets/')) return 'public, max-age=31536000, immutable';
+  return 'no-cache';
+}
+
 const server = createServer(async (req, res) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('Referrer-Policy', 'no-referrer');
@@ -69,11 +78,7 @@ const server = createServer(async (req, res) => {
     res.writeHead(200, {
       'Content-Type': TYPES[extname(found.file)] ?? 'application/octet-stream',
       'Content-Length': found.size,
-      // Hashed files never change. Everything else, sw.js above all, has to be revalidated
-      // or phones would never hear about a new version.
-      'Cache-Control': pathname.startsWith('/assets/')
-        ? 'public, max-age=31536000, immutable'
-        : 'no-cache',
+      'Cache-Control': cacheControl(pathname),
     });
     if (req.method === 'HEAD') res.end();
     else createReadStream(found.file).pipe(res);

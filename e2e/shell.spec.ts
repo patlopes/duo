@@ -71,6 +71,16 @@ test('o guia de instalação aparece no Safari do iPhone e pode ser dispensado',
   await expect(card).toBeHidden();
 });
 
+test('a primeira visita não anuncia uma versão nova', async ({ page }) => {
+  await page.goto('/');
+  await expectActiveTitle(page, 'Início');
+  await page.evaluate(() => navigator.serviceWorker.ready);
+  await page.reload();
+  await expectActiveTitle(page, 'Início');
+  await page.waitForTimeout(1000);
+  await expect(page.getByText('Nova versão disponível')).toBeHidden();
+});
+
 test('abre sem internet depois da primeira visita', async ({ page, context }) => {
   await page.goto('/');
   await expectActiveTitle(page, 'Início');
