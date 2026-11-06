@@ -1,3 +1,4 @@
+import { TrashIcon } from '@phosphor-icons/react';
 import { useMemo, useState } from 'react';
 import { useData } from '../../db/DataContext';
 import { formatBRLRound } from '../../domain/money';
@@ -8,11 +9,13 @@ import { Mascot } from '../../ui/Mascot';
 import { MoneyText } from '../../ui/MoneyText';
 import { Sheet } from '../../ui/parts';
 import { useUi } from '../../ui/uiStore';
+import { useDeleteBill } from '../bills/useDeleteBill';
 import { planDataOf } from '../home/HomePage';
 
 export function FixedView() {
   const data = useData();
   const openBill = useUi((s) => s.openBill);
+  const deleteBill = useDeleteBill();
   const now = today();
   const list = useMemo(() => fixedBills(data.recurrences, data.transactions, now), [data, now]);
   const total = list.reduce(
@@ -53,31 +56,39 @@ export function FixedView() {
         >
           {list.map(({ recurrence, next }) => {
             const category = data.categories.find((c) => c.id === recurrence.template.categoryId);
-            const editable = next;
             return (
-              <button
-                key={recurrence.id}
-                type="button"
-                className="row"
-                disabled={!editable}
-                onClick={() => editable && openBill({ transaction: editable })}
-              >
+              <div key={recurrence.id} className="bill">
                 <IconBubble
                   name={category?.icon ?? 'receipt'}
                   color={category?.color ?? '#6E2F6B'}
                 />
-                <span className="row-main">
+                <button
+                  type="button"
+                  className="bill-main"
+                  disabled={!next}
+                  onClick={() => next && openBill({ transaction: next })}
+                >
                   <span className="row-title">{recurrence.template.description}</span>
                   <span className="row-sub">
                     Todo dia {next ? dayNumber(next.date) : dayNumber(recurrence.startDate)}
                     {category ? ` · ${category.name}` : ''}
                   </span>
-                </span>
+                </button>
                 <MoneyText
                   className="row-end"
                   cents={next?.amountCents ?? recurrence.template.amountCents}
                 />
-              </button>
+                {next && (
+                  <button
+                    type="button"
+                    className="icon-button bill-delete"
+                    aria-label={`Excluir ${recurrence.template.description}`}
+                    onClick={() => void deleteBill(next)}
+                  >
+                    <TrashIcon size={18} aria-hidden="true" />
+                  </button>
+                )}
+              </div>
             );
           })}
         </div>

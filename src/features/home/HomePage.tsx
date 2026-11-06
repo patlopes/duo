@@ -4,7 +4,9 @@ import {
   EyeIcon,
   EyeSlashIcon,
   PiggyBankIcon,
+  PencilSimpleIcon,
   PlusIcon,
+  TrashIcon,
   TrendUpIcon,
   XIcon,
 } from '@phosphor-icons/react';
@@ -35,6 +37,8 @@ import { MonthPicker, useMonthSwipe } from '../../ui/MonthPicker';
 import { ProgressBar, Section, Sheet } from '../../ui/parts';
 import { useUi } from '../../ui/uiStore';
 import { useToast } from '../../ui/useToast';
+import { useDeleteBill } from '../bills/useDeleteBill';
+import { NamesSheet } from '../couple/CouplePage';
 import { LegacyBlocks } from './LegacyBlocks';
 
 export function planDataOf(data: Data): PlanData {
@@ -157,10 +161,17 @@ function Hero({
           Colocar o salário de cada um
         </button>
       )}
-      {(payA || payB) && (
+      {plan.hasIncome && (
         <div className="hero-foot">
           {payA && <span className="hero-chip">{payText(a.name, payA)}</span>}
           {payB && <span className="hero-chip">{payText(b.name, payB)}</span>}
+          <button
+            type="button"
+            className="hero-chip hero-edit pressable"
+            onClick={() => navigate('/tabs/home/salaries')}
+          >
+            <PencilSimpleIcon size={14} weight="bold" aria-hidden="true" /> Editar salários
+          </button>
         </div>
       )}
     </div>
@@ -179,6 +190,7 @@ function SplitCard({
   now: string;
 }) {
   const presentToast = useToast();
+  const [namesOpen, setNamesOpen] = useState(false);
   const mode = data.settings.splitMode;
   const [a, b] = data.members;
   const [animalA, animalB] = data.settings.memberAnimals;
@@ -247,7 +259,15 @@ function SplitCard({
             <div key={member.id} className="person">
               <div className="person-head">
                 {data.settings.mascots && <Mascot animal={animal} size={40} />}
-                <span>{member.name}</span>
+                <button
+                  type="button"
+                  className="person-name"
+                  aria-label={`Mudar o nome de ${member.name}`}
+                  onClick={() => setNamesOpen(true)}
+                >
+                  <span>{member.name}</span>
+                  <PencilSimpleIcon size={12} weight="bold" aria-hidden="true" />
+                </button>
               </div>
               <MoneyText cents={plan.share[index]} animate className="person-amount" />
               <span className="person-sub">
@@ -314,12 +334,14 @@ function SplitCard({
           </p>
         )}
       </div>
+      {namesOpen && <NamesSheet onClose={() => setNamesOpen(false)} />}
     </Section>
   );
 }
 
 function BillRow({ bill, now }: { bill: Transaction; now: string }) {
   const openBill = useUi((s) => s.openBill);
+  const deleteBill = useDeleteBill();
   const paid = bill.status === 'paid' || bill.cardId !== null;
   const overdue = !paid && bill.date < now;
   return (
@@ -348,6 +370,14 @@ function BillRow({ bill, now }: { bill: Transaction; now: string }) {
         </span>
       </button>
       <MoneyText className="row-end" cents={bill.amountCents} />
+      <button
+        type="button"
+        className="icon-button bill-delete"
+        aria-label={`Excluir ${bill.description || 'conta'}`}
+        onClick={() => void deleteBill(bill)}
+      >
+        <TrashIcon size={18} aria-hidden="true" />
+      </button>
     </div>
   );
 }
@@ -477,6 +507,7 @@ function PlanBlock({
 }
 
 function CategoriesBlock({ plan }: { plan: MonthPlan }) {
+  const openBill = useUi((s) => s.openBill);
   const [picked, setPicked] = useState<Bucket | null>(null);
   const buckets = plan.buckets.filter((b) => b.totalCents > 0);
   if (buckets.length < 2) return null;
@@ -531,7 +562,15 @@ function CategoriesBlock({ plan }: { plan: MonthPlan }) {
           ) : (
             <div className="card-list">
               {picked.bills.map((bill) => (
-                <div key={bill.id} className="row">
+                <button
+                  key={bill.id}
+                  type="button"
+                  className="row"
+                  onClick={() => {
+                    setPicked(null);
+                    openBill({ transaction: bill });
+                  }}
+                >
                   <IconBubble name={picked.icon} color={picked.color} size={32} />
                   <span className="row-main">
                     <span className="row-title">{bill.description || 'Sem nome'}</span>
@@ -540,7 +579,7 @@ function CategoriesBlock({ plan }: { plan: MonthPlan }) {
                     </span>
                   </span>
                   <MoneyText className="row-end" cents={bill.amountCents} />
-                </div>
+                </button>
               ))}
             </div>
           )}

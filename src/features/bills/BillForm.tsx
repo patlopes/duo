@@ -3,9 +3,7 @@ import { useData } from '../../db/DataContext';
 import {
   COUPLE_BILLS_CATEGORY_ID,
   createTransaction,
-  deleteTransaction,
   ensureJointAccount,
-  undoDeleteTransaction,
   updateTransaction,
 } from '../../db/ops';
 import { addMonths, dayInMonth, dayNumber, monthOf, today } from '../../domain/months';
@@ -15,6 +13,7 @@ import { ChoiceChips, Field, MoneyField, Sheet } from '../../ui/parts';
 import { useUi, type BillRequest } from '../../ui/uiStore';
 import { useToast } from '../../ui/useToast';
 import { useClosedMonthGuard, useScopePrompt } from '../form/useScopePrompt';
+import { useDeleteBill } from './useDeleteBill';
 
 /** What couples pay together, in the order they think of it. */
 const QUICK_NAMES = ['Moradia', 'Contas do casal', 'Casamento', 'Casa nova', 'Compras', 'Viagem'];
@@ -26,6 +25,7 @@ function BillSheet({ request, onClose }: { request: BillRequest; onClose: () => 
   const month = useUi((s) => s.month);
   const presentToast = useToast();
   const askScope = useScopePrompt();
+  const deleteBill = useDeleteBill();
   const confirmClosed = useClosedMonthGuard();
   const editing = request.transaction ?? null;
 
@@ -107,20 +107,7 @@ function BillSheet({ request, onClose }: { request: BillRequest; onClose: () => 
   };
 
   const remove = async () => {
-    if (!editing) return;
-    if (!(await confirmClosed(editing.competenceMonth))) return;
-    const scope = isSeries ? await askScope('Excluir') : 'one';
-    if (!scope) return;
-    const undo = await deleteTransaction(editing.id, scope);
-    onClose();
-    void presentToast({
-      message: undo.ids.length > 1 ? `${undo.ids.length} contas excluídas` : 'Conta excluída',
-      duration: 5000,
-      position: 'top',
-      buttons: [
-        { text: 'Desfazer', handler: () => void undoDeleteTransaction(undo.ids, undo.recurrence) },
-      ],
-    });
+    if (editing && (await deleteBill(editing))) onClose();
   };
 
   return (

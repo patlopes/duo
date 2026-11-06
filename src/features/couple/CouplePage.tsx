@@ -18,6 +18,7 @@ import type { Member, MemberIncome } from '../../schemas/entities';
 import { LargeTitlePage } from '../../ui/LargeTitlePage';
 import { MoneyText } from '../../ui/MoneyText';
 import { MonthPicker } from '../../ui/MonthPicker';
+import { Mascot } from '../../ui/Mascot';
 import { ChoiceChips, Field, MoneyField, Section, Sheet } from '../../ui/parts';
 import { useUi } from '../../ui/uiStore';
 
@@ -413,40 +414,54 @@ function JointBudgetSheet({ onClose }: { onClose: () => void }) {
   );
 }
 
+const ANIMAL_ARTICLE = { giraffe: 'a girafa', monkey: 'o macaquinho' } as const;
+
+/** The name shown next to each animal, and which animal stands for whom. */
 export function NamesSheet({ onClose }: { onClose: () => void }) {
-  const { members } = useData();
+  const { members, settings } = useData();
   const [nameA, setNameA] = useState(members[0].name);
   const [nameB, setNameB] = useState(members[1].name);
+  const [animalA, animalB] = settings.memberAnimals;
   const save = async () => {
     if (nameA.trim()) await upsert<Member>('members', { ...members[0], name: nameA.trim() });
     if (nameB.trim()) await upsert<Member>('members', { ...members[1], name: nameB.trim() });
     onClose();
   };
+  const rows = [
+    { animal: animalA, value: nameA, set: setNameA, label: 'Nome da pessoa 1' },
+    { animal: animalB, value: nameB, set: setNameB, label: 'Nome da pessoa 2' },
+  ];
   return (
     <Sheet
       isOpen
       onClose={onClose}
-      title="Nomes"
-      breakpoints={[0, 0.5]}
-      initial={0.5}
+      title="Nomes e bichinhos"
+      breakpoints={[0, 0.7, 0.92]}
+      initial={0.7}
       onSave={() => void save()}
     >
-      <Field label="Pessoa 1">
-        <input
-          className="input"
-          aria-label="Nome da pessoa 1"
-          value={nameA}
-          onChange={(e) => setNameA(e.target.value)}
-        />
-      </Field>
-      <Field label="Pessoa 2">
-        <input
-          className="input"
-          aria-label="Nome da pessoa 2"
-          value={nameB}
-          onChange={(e) => setNameB(e.target.value)}
-        />
-      </Field>
+      {rows.map((row) => (
+        <div key={row.label} className="name-row">
+          {settings.mascots && <Mascot animal={row.animal} size={56} />}
+          <Field label={settings.mascots ? `Quem é ${ANIMAL_ARTICLE[row.animal]}` : 'Nome'}>
+            <input
+              className="input"
+              aria-label={row.label}
+              value={row.value}
+              onChange={(e) => row.set(e.target.value)}
+            />
+          </Field>
+        </div>
+      ))}
+      {settings.mascots && (
+        <button
+          type="button"
+          className="secondary-button"
+          onClick={() => void updateSettings({ memberAnimals: [animalB, animalA] })}
+        >
+          Trocar os bichinhos
+        </button>
+      )}
     </Sheet>
   );
 }

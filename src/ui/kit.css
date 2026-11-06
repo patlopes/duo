@@ -1482,3 +1482,39 @@ ion-toggle[slot='start'] {
 .donut-slice:active {
   stroke-width: 28;
 }
+
+.hero-edit {
+  border: 0;
+  color: inherit;
+  font-family: inherit;
+}
+.person-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+}
+.person-name svg {
+  flex: none;
+  opacity: 0.55;
+}
+.bill-delete {
+  margin-left: calc(-1 * var(--space-2));
+  margin-right: calc(-1 * var(--space-2));
+  color: var(--color-text-secondary);
+}
+.name-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.name-row > :last-child {
+  flex: 1;
+  min-width: 0;
+}

@@ -76,8 +76,6 @@ function PinSheet({ onClose }: { onClose: () => void }) {
   );
 }
 
-const ANIMAL_NAME = { giraffe: 'girafa', monkey: 'macaquinho' } as const;
-
 export default function SettingsPage() {
   const { settings, members } = useData();
   const presentToast = useToast();
@@ -177,21 +175,6 @@ export default function SettingsPage() {
             Girafa e macaquinho
           </IonToggle>
         </IonItem>
-        {settings.mascots && (
-          <IonItem
-            button
-            detail={false}
-            onClick={() => {
-              const [first, second] = settings.memberAnimals;
-              void updateSettings({ memberAnimals: [second, first] });
-            }}
-          >
-            <IonLabel>Trocar quem é quem</IonLabel>
-            <span slot="end" className="muted subhead">
-              {members[0].name}: {ANIMAL_NAME[settings.memberAnimals[0]]}
-            </span>
-          </IonItem>
-        )}
       </GroupedList>
 
       <GroupedList title="Privacidade">
@@ -230,7 +213,7 @@ export default function SettingsPage() {
 
       <GroupedList title="Casal">
         <IonItem button detail onClick={() => setNamesOpen(true)}>
-          <IonLabel>Nomes</IonLabel>
+          <IonLabel>Nomes e bichinhos</IonLabel>
         </IonItem>
         <IonItem>
           <IonLabel>Este celular é de</IonLabel>

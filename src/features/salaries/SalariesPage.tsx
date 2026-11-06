@@ -1,6 +1,6 @@
-import { TrendUpIcon } from '@phosphor-icons/react';
+import { PencilSimpleIcon, TrendUpIcon } from '@phosphor-icons/react';
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useData } from '../../db/DataContext';
 import { softDelete, upsert } from '../../db/ops';
 import { addMonths, monthLabel, monthOf, today } from '../../domain/months';
@@ -10,6 +10,7 @@ import { LargeTitlePage } from '../../ui/LargeTitlePage';
 import { Mascot } from '../../ui/Mascot';
 import { MoneyText } from '../../ui/MoneyText';
 import { Field, MoneyField, Sheet } from '../../ui/parts';
+import { NamesSheet } from '../couple/CouplePage';
 
 type Editor = { member: Member; kind: 'salary' | 'raise'; plan?: SalaryPlan };
 
@@ -29,10 +30,13 @@ function SalarySheet({ editor, onClose }: { editor: Editor; onClose: () => void 
     const day = Number(payDay);
     if (cents <= 0) return setError('Digite o salário líquido.');
     if (!(day >= 1 && day <= 31)) return setError('O dia do pagamento vai de 1 a 31.');
-    // A change in the month already in force replaces it, so the history keeps one row per month.
+    // A month holds one salary: landing on another plan's month replaces that plan.
     const sameMonth = salaryPlans.find(
       (p) => p.memberId === editor.member.id && p.startMonth === start,
     );
+    if (editor.plan && sameMonth && sameMonth.id !== editor.plan.id) {
+      await softDelete('salaryPlans', sameMonth.id);
+    }
     await upsert<SalaryPlan>('salaryPlans', {
       ...(editor.plan ?? sameMonth ?? {}),
       memberId: editor.member.id,
@@ -44,6 +48,7 @@ function SalarySheet({ editor, onClose }: { editor: Editor; onClose: () => void 
   };
 
   const months = Array.from({ length: 24 }, (_, i) => addMonths(current, isRaise ? i + 1 : i - 3));
+  if (!months.includes(start)) months.unshift(start);
 
   return (
     <Sheet
@@ -64,7 +69,10 @@ function SalarySheet({ editor, onClose }: { editor: Editor; onClose: () => void 
           onChange={(e) => setPayDay(e.target.value.replace(/\D/g, '').slice(0, 2))}
         />
       </Field>
-      <Field label={isRaise ? 'Vale a partir de' : 'Desde'}>
+      <Field
+        label={isRaise ? 'Vale a partir de' : 'Desde'}
+        hint={isRaise ? undefined : 'Corrigir aqui muda a renda de todos os meses desde esta data.'}
+      >
         <select
           className="select"
           aria-label="Mês de início"
@@ -79,7 +87,7 @@ function SalarySheet({ editor, onClose }: { editor: Editor; onClose: () => void 
         </select>
       </Field>
       {error && <p className="tone-expense small">{error}</p>}
-      {editor.plan && (
+      {isRaise && editor.plan && (
         <button
           type="button"
           className="danger-button"
@@ -95,6 +103,8 @@ function SalarySheet({ editor, onClose }: { editor: Editor; onClose: () => void 
 export default function SalariesPage() {
   const { members, salaryPlans, settings } = useData();
   const [editor, setEditor] = useState<Editor | null>(null);
+  const [namesOpen, setNamesOpen] = useState(false);
+  const { pathname } = useLocation();
   const now = today();
   const month = monthOf(now);
 
@@ -125,7 +135,15 @@ export default function SalariesPage() {
                     delay={i}
                   />
                 )}
-                <span>{member.name}</span>
+                <button
+                  type="button"
+                  className="person-name"
+                  aria-label={`Mudar o nome de ${member.name}`}
+                  onClick={() => setNamesOpen(true)}
+                >
+                  <span>{member.name}</span>
+                  <PencilSimpleIcon size={14} weight="bold" aria-hidden="true" />
+                </button>
               </div>
               {plan ? (
                 <>
@@ -167,7 +185,7 @@ export default function SalariesPage() {
                 <button
                   type="button"
                   className="secondary-button"
-                  onClick={() => setEditor({ member, kind: 'salary' })}
+                  onClick={() => setEditor({ member, kind: 'salary', plan: plan ?? undefined })}
                 >
                   {plan ? 'Editar' : 'Colocar salário'}
                 </button>
@@ -185,13 +203,14 @@ export default function SalariesPage() {
         })}
         <Link
           className="secondary-button"
-          to="/tabs/more/simulator"
+          to={pathname.replace(/salaries$/, 'simulator')}
           style={{ marginTop: 'var(--space-4)', textDecoration: 'none' }}
         >
           E se tiver um aumento? Simular
         </Link>
       </div>
       {editor && <SalarySheet editor={editor} onClose={() => setEditor(null)} />}
+      {namesOpen && <NamesSheet onClose={() => setNamesOpen(false)} />}
     </LargeTitlePage>
   );
 }
