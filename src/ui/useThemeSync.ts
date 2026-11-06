@@ -1,8 +1,8 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useEffect } from 'react';
 import { BRAND } from '../brand';
-import { readSettings } from '../db/settingsRepo';
-import type { ThemeMode } from '../schemas/settings';
+import { readSettings } from '../db/database';
+import type { ThemeMode } from '../schemas/settingsDefaults';
 
 const THEME_MIRROR_KEY = 'duo-theme';
 

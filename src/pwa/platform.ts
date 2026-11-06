@@ -8,7 +8,11 @@ export function isIos(): boolean {
   return /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
 }
 
-/** There is no install prompt on iOS, so this is the moment to show the manual guide. */
+export function isAndroid(): boolean {
+  return /Android/.test(navigator.userAgent);
+}
+
+/** Phones in a browser tab are who the install guide is for; desktop is secondary (spec 1). */
 export function shouldOfferInstallGuide(): boolean {
-  return isIos() && !isStandalone();
+  return (isIos() || isAndroid()) && !isStandalone();
 }

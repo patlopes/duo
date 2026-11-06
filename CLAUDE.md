@@ -43,6 +43,11 @@ PWA de finanças para um casal que divide despesas proporcionalmente à renda. i
 
 ## Armadilhas conhecidas
 
+- Hooks de overlay do Ionic ignoram um novo overlay enquanto o anterior está aberto: use `useToast`, e um `useIonAlert` por alerta encadeado.
+- `Field` só usa `<label>` em volta de um controle nativo: em volta de botões, tocar na legenda aciona o primeiro.
+- `ion-toast` guarda a mensagem no shadow DOM e fica sempre no DOM: nos testes use `getByText` e visibilidade, nunca `hasText` ou `count()`.
+- Estado inicial lido de `useData()` pode congelar um valor de antes do onboarding: derive em vez de guardar.
+- Páginas ocultas ficam no DOM, então `.first()` pode pegar uma cópia invisível.
 - `IonTabBar` descarta filhos que não sejam tab button. Componentes próprios precisam de `isTabButton = true`.
 - `ion-title size="large"` é propriedade, não atributo: nos testes, selecione por `.title-large`.
 - Variáveis de overlays do Ionic (action sheet) são declaradas em seletor com escopo, e só um seletor mais específico as sobrescreve.

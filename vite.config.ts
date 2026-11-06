@@ -14,7 +14,11 @@ function gitSha(): string {
   }
 }
 
+/** Root by default. A host that serves the app under a subpath sets DUO_BASE, e.g. `/meu-bem/`. */
+const BASE = process.env.DUO_BASE ?? '/';
+
 export default defineConfig({
+  base: BASE,
   define: {
     __BUILD_ID__: JSON.stringify(gitSha()),
     __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
@@ -26,7 +30,7 @@ export default defineConfig({
       injectRegister: false,
       includeAssets: ['icons/apple-touch-icon-180.png', 'icons/favicon-64.png'],
       manifest: {
-        id: '/',
+        id: BASE,
         name: BRAND.name,
         short_name: BRAND.shortName,
         description: BRAND.description,
@@ -34,15 +38,15 @@ export default defineConfig({
         dir: 'ltr',
         display: 'standalone',
         orientation: 'portrait',
-        start_url: '/?source=pwa',
-        scope: '/',
+        start_url: `${BASE}?source=pwa`,
+        scope: BASE,
         theme_color: BRAND.themeColorLight,
         background_color: BRAND.themeColorLight,
         icons: [
-          { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
-          { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+          { src: 'icons/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+          { src: 'icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
           {
-            src: '/icons/icon-maskable-512.png',
+            src: 'icons/icon-maskable-512.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'maskable',
@@ -51,7 +55,9 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,webp,woff2}'],
-        navigateFallback: '/index.html',
+        // iOS reads splash screens at install time; the service worker never needs them.
+        globIgnores: ['splash/**'],
+        navigateFallback: `${BASE}index.html`,
         cleanupOutdatedCaches: true,
       },
     }),

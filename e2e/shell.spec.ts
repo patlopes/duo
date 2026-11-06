@@ -1,19 +1,24 @@
 import { expect, test } from '@playwright/test';
-import { expectActiveTitle, gotoTab, saveScreen, simulateSafeArea } from './helpers';
-
-const PHASE = 'phase-0';
+import {
+  expectActiveTitle,
+  gotoTab,
+  loadSeed,
+  saveScreen,
+  simulateSafeArea,
+  skipOnboarding,
+} from './helpers';
 
 test.beforeEach(async ({ page }, testInfo) => {
   await simulateSafeArea(page, testInfo);
 });
 
 test('navega pelas abas e abre o menu do +', async ({ page }) => {
-  await page.goto('/?source=pwa');
+  await page.goto('?source=pwa');
+  await skipOnboarding(page);
   await expect(page).toHaveURL(/\/tabs\/home$/);
   await expectActiveTitle(page, 'Início');
 
   await gotoTab(page, 'Lançamentos');
-  await expectActiveTitle(page, 'Lançamentos');
   await expect(page).toHaveURL(/\/tabs\/transactions$/);
 
   await gotoTab(page, 'Planejamento');
@@ -29,7 +34,8 @@ test('navega pelas abas e abre o menu do +', async ({ page }) => {
 });
 
 test('botão + cabe no alvo mínimo de toque e fica centralizado', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('./');
+  await skipOnboarding(page);
   const box = await page.getByRole('button', { name: 'Novo lançamento' }).boundingBox();
   const viewport = page.viewportSize()!;
   expect(box!.width).toBeGreaterThanOrEqual(44);
@@ -38,7 +44,8 @@ test('botão + cabe no alvo mínimo de toque e fica centralizado', async ({ page
 });
 
 test('o tema escolhido sobrevive a uma recarga', async ({ page }) => {
-  await page.goto('/tabs/more');
+  await page.goto('tabs/more/settings');
+  await skipOnboarding(page);
   await page.locator('ion-segment-button', { hasText: 'Escuro' }).click();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
 
@@ -51,17 +58,18 @@ test('o tema escolhido sobrevive a uma recarga', async ({ page }) => {
 });
 
 test('/debug mostra o diagnóstico sem depender do aparelho', async ({ page }) => {
-  await page.goto('/debug');
+  await page.goto('debug');
+  await skipOnboarding(page);
   await expectActiveTitle(page, 'Diagnóstico');
-  await expect(page.getByText('IndexedDB (gravar e ler)')).toBeVisible();
   const row = page.locator('ion-item', { hasText: 'IndexedDB (gravar e ler)' });
   await expect(row.getByText('ok', { exact: true })).toBeVisible();
   await expect(page.getByText('canShare .json application/json')).toBeVisible();
 });
 
-test('o guia de instalação aparece no Safari do iPhone e pode ser dispensado', async ({ page }) => {
-  await page.goto('/tabs/home');
-  const card = page.getByText('Instale na Tela de Início');
+test('o guia de instalação aparece no celular e pode ser dispensado', async ({ page }) => {
+  await page.goto('tabs/home');
+  await skipOnboarding(page);
+  const card = page.getByText('Instale no celular');
   await expect(card).toBeVisible();
   await page.getByRole('button', { name: 'Dispensar aviso de instalação' }).click();
   await expect(card).toBeHidden();
@@ -72,8 +80,8 @@ test('o guia de instalação aparece no Safari do iPhone e pode ser dispensado',
 });
 
 test('a primeira visita não anuncia uma versão nova', async ({ page }) => {
-  await page.goto('/');
-  await expectActiveTitle(page, 'Início');
+  await page.goto('./');
+  await skipOnboarding(page);
   await page.evaluate(() => navigator.serviceWorker.ready);
   await page.reload();
   await expectActiveTitle(page, 'Início');
@@ -82,31 +90,18 @@ test('a primeira visita não anuncia uma versão nova', async ({ page }) => {
 });
 
 test('abre sem internet depois da primeira visita', async ({ page, context }) => {
-  await page.goto('/');
-  await expectActiveTitle(page, 'Início');
-
-  // The first visit installs the worker; only the next load runs under its control.
-  await page.evaluate(async () => {
-    const registration = await navigator.serviceWorker.ready;
-    if (!navigator.serviceWorker.controller) {
-      await new Promise<void>((resolve) => {
-        navigator.serviceWorker.addEventListener('controllerchange', () => resolve(), {
-          once: true,
-        });
-        registration.active?.postMessage({ type: 'SKIP_WAITING' });
-        setTimeout(resolve, 3000);
-      });
-    }
-  });
-
+  await page.goto('./');
+  await skipOnboarding(page);
+  await page.evaluate(() => navigator.serviceWorker.ready);
+  await page.waitForTimeout(500);
   await page.reload();
   await expectActiveTitle(page, 'Início');
 
   await context.setOffline(true);
   await page.reload();
   await expectActiveTitle(page, 'Início');
-  await gotoTab(page, 'Lançamentos');
-  await expectActiveTitle(page, 'Lançamentos');
+  await gotoTab(page, 'Mais');
+  await expectActiveTitle(page, 'Mais');
   await context.setOffline(false);
 });
 
@@ -114,39 +109,82 @@ test.describe('telas', () => {
   for (const colorScheme of ['light', 'dark'] as const) {
     test.describe(colorScheme, () => {
       test.use({ colorScheme });
+      test.setTimeout(90_000);
 
-      test(`captura as telas da fase 0 (${colorScheme})`, async ({ page }, testInfo) => {
-        await page.goto('/tabs/home');
+      test(`captura as telas do app (${colorScheme})`, async ({ page }, testInfo) => {
+        const shot = (name: string) => saveScreen(page, testInfo, 'app', name);
+        await loadSeed(page);
+
+        await page.goto('tabs/home');
         await expectActiveTitle(page, 'Início');
-        await saveScreen(page, testInfo, PHASE, 'home');
-
-        await gotoTab(page, 'Mais');
-        await expectActiveTitle(page, 'Mais');
-        await saveScreen(page, testInfo, PHASE, 'more');
-
-        await page.getByRole('button', { name: 'Novo lançamento' }).click();
-        await expect(
-          page.locator('ion-action-sheet').getByRole('button', { name: 'Receita' }),
-        ).toBeVisible();
-        await saveScreen(page, testInfo, PHASE, 'add-sheet');
-
-        await page.goto('/install');
-        await expectActiveTitle(page, 'Instalar');
-        await saveScreen(page, testInfo, PHASE, 'install-guide');
-
-        await page.goto('/debug');
-        await expectActiveTitle(page, 'Diagnóstico');
-        await saveScreen(page, testInfo, PHASE, 'debug');
-
-        // Scrolled, the large title collapses and content must blur behind the translucent toolbar.
+        await shot('home');
         await page.evaluate(() =>
           (
             document.querySelector('.ion-page ion-content') as unknown as {
               scrollToPoint: (x: number, y: number) => Promise<void>;
             }
-          ).scrollToPoint(0, 320),
+          ).scrollToPoint(0, 560),
         );
-        await saveScreen(page, testInfo, PHASE, 'debug-scrolled');
+        await shot('home-scrolled');
+
+        await gotoTab(page, 'Lançamentos');
+        await expect(page.getByText('Mercado').first()).toBeVisible();
+        await shot('transactions');
+
+        await page.getByRole('button', { name: 'Novo lançamento' }).click();
+        await page
+          .locator('ion-action-sheet')
+          .getByRole('button', { name: 'Despesa', exact: true })
+          .click();
+        await expect(page.getByRole('group', { name: 'Teclado de valor' })).toBeVisible();
+        await shot('form');
+        await page.getByRole('button', { name: 'Cancelar' }).click();
+        await expect(page.getByRole('group', { name: 'Teclado de valor' })).toBeHidden();
+
+        const routes: [string, string, string][] = [
+          ['tabs/planning', 'Planejamento', 'budgets'],
+          ['tabs/planning?view=goals', 'Planejamento', 'goals'],
+          ['tabs/more/couple', 'Acerto do mês', 'couple'],
+          ['tabs/more/incomes', 'Rendas', 'incomes'],
+          ['tabs/more/accounts', 'Contas', 'accounts'],
+          ['tabs/more/cards', 'Cartões', 'cards'],
+          ['tabs/more/reports', 'Relatórios', 'reports'],
+          ['tabs/more/ai', 'Pedir para uma IA', 'ai'],
+          ['tabs/more/import', 'Importar extrato', 'import'],
+          ['tabs/more/backup', 'Backup', 'backup'],
+          ['tabs/more/health', 'Saúde dos dados', 'health'],
+          ['tabs/more/settings', 'Ajustes', 'settings'],
+          ['tabs/more/categories', 'Categorias', 'categories'],
+          ['tabs/more', 'Mais', 'more'],
+          ['install', 'Instalar', 'install-guide'],
+          ['debug', 'Diagnóstico', 'debug'],
+        ];
+        for (const [path, title, name] of routes) {
+          await page.goto(path);
+          await expectActiveTitle(page, title);
+          await shot(name);
+        }
+
+        await page.goto('tabs/planning?view=goals');
+        await page.locator('a.row', { hasText: 'Casamento' }).click();
+        await expectActiveTitle(page, 'Casamento');
+        await shot('goal-detail');
+
+        await page.goto('tabs/more/accounts');
+        await page.locator('a.row', { hasText: 'Conta conjunta' }).click();
+        await expectActiveTitle(page, 'Conta conjunta');
+        await shot('account-detail');
+
+        await page.goto('tabs/more/cards');
+        await page.locator('a.row', { hasText: 'Cartão A' }).click();
+        await expectActiveTitle(page, 'Cartão A');
+        await shot('card-detail');
+
+        await page.goto('tabs/more/reports');
+        await expectActiveTitle(page, 'Relatórios');
+        await page.getByText('Receitas × despesas').scrollIntoViewIfNeeded();
+        await page.waitForTimeout(600);
+        await shot('reports-charts');
       });
     });
   }

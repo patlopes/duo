@@ -1,28 +1,30 @@
 # Progresso
 
-## Fase 0 · Fundação
+Patrick pediu para seguir sem parar por fase até o app estar funcional. O status abaixo separa o que foi testado aqui do que só o aparelho real confirma.
 
-- [x] Vite, TypeScript `strict`, Ionic em modo `ios`, Dexie, Zod, Zustand
-- [x] Tokens da paleta Ameixa, claro e escuro, com override manual e contraste testado
-- [x] Tab bar de 5 itens, large titles, safe areas, `100dvh`
-- [x] PWA: manifest, service worker, meta tags iOS, aviso de nova versão, guia de instalação simples
-- [x] `/debug` com relatório copiável
-- [x] Ícone placeholder e derivados
-- [x] Testes unitários e E2E WebKit (iPhone 15 Pro e iPhone SE), incluindo offline
-- [x] Orçamento de bundle no CI
-- [x] CI no GitHub Actions
-- [x] Publicado em https://financas.patricklopes.cloud por túnel Cloudflare
-- [ ] **Aceite:** instalar no iPhone, abrir offline e enviar o relatório do `/debug`
+## Fases 0 a 5: prontas
 
-## Fase 1 · Núcleo
+- [x] **0 · Fundação:** PWA instalável, tema claro e escuro, tab bar, `/debug`, CI, orçamento de bundle
+- [x] **1 · Núcleo:** contas, categorias, lançamentos, formulário com teclado próprio, lista virtualizada, Início
+- [x] **2 · Cartões e repetições:** faturas derivadas, parcelas, pagar fatura, recorrências, contas a pagar, comprovante
+- [x] **3 · Planejamento:** orçamentos, sonhos dos 3 tipos com checklist e celebração, relatórios, frase-resumo
+- [x] **4 · Casal:** rendas, rateio, acerto, conta conjunta, fechar e reabrir mês, justiça, privacidade de gastos individuais
+- [x] **5 · Dados e IA:** backup e restauração, pacote para IA, change-set com revisão e desfazer, saúde dos dados, OFX e CSV
 
-Não iniciada.
+## Fase 6: parcial
 
-## Fases seguintes
+- [x] Onboarding, trava com PIN e Face ID, lembrete de backup, blocos reordenáveis, splash screens, badge
+- [ ] **Assets finais:** o ícone é placeholder e os estados vazios usam ícones. Decidir a origem (`docs/ARTCRAFT.md`)
+- [ ] **Checklist manual no iPhone:** instalar, offline, safe areas, teclado sobre sheets, swipe-back, share sheet, câmera, Face ID
+- [ ] Desempenho em iPhone de 3 anos
 
-- [ ] Fase 2: cartões e repetições
-- [ ] Fase 3: planejamento
-- [ ] Fase 4: casal. **Antes de começar:** decidir como compras de cartão entram no acerto (a 5.5 só conta `paid`, e a 5.3 mantém compras `pending` até a fatura ser paga)
-- [ ] Fase 5: dados e IA
-- [ ] Fase 6: polimento. **Antes de começar:** decidir a origem dos assets (`docs/ARTCRAFT.md`)
-- [ ] Fase 7: sync, se aprovada
+## Fora, por ora
+
+- [ ] Hospedagem definitiva sem depender do PC (D-027)
+- [ ] Fase 7: sync entre os dois celulares
+- [ ] Opcionais do spec: importador da planilha antiga e criptografia do IndexedDB
+
+## Decisões a confirmar com o Patrick
+
+- D-020: compras de cartão no acerto
+- D-021: gasto de sonho fora do orçamento da casa

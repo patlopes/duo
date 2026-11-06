@@ -2,6 +2,12 @@ import { registerSW } from 'virtual:pwa-register';
 import { usePwaStore } from './pwaStore';
 
 export function initServiceWorker(): void {
+  window.addEventListener('beforeinstallprompt', (event) => {
+    event.preventDefault();
+    usePwaStore.getState().setInstallPrompt(event as unknown as { prompt: () => Promise<void> });
+  });
+  window.addEventListener('appinstalled', () => usePwaStore.getState().setInstallPrompt(null));
+
   if (!('serviceWorker' in navigator)) return;
 
   const updateServiceWorker = registerSW({

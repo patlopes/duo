@@ -1,50 +1,45 @@
-import { IonItem, IonLabel, IonSegment, IonSegmentButton } from '@ionic/react';
-import { useLiveQuery } from 'dexie-react-hooks';
+import { IonItem, IonLabel } from '@ionic/react';
 import { BRAND } from '../../brand';
-import { readSettings, updateSettings } from '../../db/settingsRepo';
-import { ThemeModeSchema } from '../../schemas/settings';
 import { GroupedList } from '../../ui/GroupedList';
 import { LargeTitlePage } from '../../ui/LargeTitlePage';
-import styles from './MorePage.module.css';
 
-export function MorePage() {
-  const theme = useLiveQuery(async () => (await readSettings()).theme, [], 'system');
+function NavItem({ to, children }: { to: string; children: string }) {
+  return (
+    <IonItem routerLink={to} detail>
+      <IonLabel>{children}</IonLabel>
+    </IonItem>
+  );
+}
 
+export default function MorePage() {
   return (
     <LargeTitlePage title="Mais">
-      <GroupedList title="Aparência">
-        <IonItem lines="none">
-          <IonSegment
-            aria-label="Tema do app"
-            value={theme}
-            onIonChange={(event) => {
-              const parsed = ThemeModeSchema.safeParse(event.detail.value);
-              if (parsed.success) void updateSettings({ theme: parsed.data });
-            }}
-          >
-            <IonSegmentButton value="system">
-              <IonLabel>Automático</IonLabel>
-            </IonSegmentButton>
-            <IonSegmentButton value="light">
-              <IonLabel>Claro</IonLabel>
-            </IonSegmentButton>
-            <IonSegmentButton value="dark">
-              <IonLabel>Escuro</IonLabel>
-            </IonSegmentButton>
-          </IonSegment>
-        </IonItem>
+      <GroupedList title="Dinheiro">
+        <NavItem to="/tabs/more/accounts">Contas</NavItem>
+        <NavItem to="/tabs/more/cards">Cartões</NavItem>
+        <NavItem to="/tabs/more/reports">Relatórios</NavItem>
       </GroupedList>
-
-      <GroupedList title="Sobre o app">
-        <IonItem routerLink="/install" detail>
-          <IonLabel>Como instalar no iPhone</IonLabel>
-        </IonItem>
-        <IonItem routerLink="/debug" detail>
-          <IonLabel>Diagnóstico do aparelho</IonLabel>
-        </IonItem>
+      <GroupedList title="Casal">
+        <NavItem to="/tabs/more/couple">Acerto do mês</NavItem>
+        <NavItem to="/tabs/more/incomes">Rendas</NavItem>
       </GroupedList>
-
-      <p className={styles.version}>
+      <GroupedList title="Organização">
+        <NavItem to="/tabs/more/categories">Categorias</NavItem>
+        <NavItem to="/tabs/more/rules">Regras automáticas</NavItem>
+      </GroupedList>
+      <GroupedList title="Seus dados">
+        <NavItem to="/tabs/more/ai">Pedir para uma IA</NavItem>
+        <NavItem to="/tabs/more/import">Importar extrato</NavItem>
+        <NavItem to="/tabs/more/backup">Backup</NavItem>
+        <NavItem to="/tabs/more/history">Histórico de importações</NavItem>
+        <NavItem to="/tabs/more/health">Saúde dos dados</NavItem>
+      </GroupedList>
+      <GroupedList title="App">
+        <NavItem to="/tabs/more/settings">Ajustes</NavItem>
+        <NavItem to="/install">Como instalar no celular</NavItem>
+        <NavItem to="/debug">Diagnóstico do aparelho</NavItem>
+      </GroupedList>
+      <p className="small muted center" style={{ margin: 'var(--space-4) 0 var(--space-7)' }}>
         {BRAND.name} · versão {__BUILD_ID__}
       </p>
     </LargeTitlePage>

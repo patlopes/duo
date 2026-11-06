@@ -10,6 +10,7 @@ import '@ionic/react/css/structure.css';
 import '@ionic/react/css/typography.css';
 import './ui/tokens.css';
 import './ui/global.css';
+import './ui/kit.css';
 
 setupIonicReact({ mode: 'ios' });
 

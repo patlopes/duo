@@ -9,7 +9,7 @@ export default defineConfig({
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? [['list'], ['html', { open: 'never' }]] : 'list',
   use: {
-    baseURL: `http://localhost:${PORT}`,
+    baseURL: `http://localhost:${PORT}/`,
     trace: 'off',
     serviceWorkers: 'allow',
     locale: 'pt-BR',
@@ -37,7 +37,7 @@ export default defineConfig({
   ],
   webServer: {
     command: 'npm run preview',
-    url: `http://localhost:${PORT}`,
+    url: `http://localhost:${PORT}/`,
     reuseExistingServer: !process.env.CI,
   },
 });

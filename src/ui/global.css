@@ -35,6 +35,18 @@ ion-segment-button {
   --color-checked: var(--color-text);
 }
 
+/*
+ * Translucent bars read well only with their blur. Ionic's default is see-through enough that text
+ * behind stays legible wherever the blur is missing, so it is made more opaque.
+ */
+ion-tab-bar.tab-bar-translucent {
+  --background: rgba(var(--color-bg-rgb), 0.94);
+}
+
+ion-header.header-translucent ion-toolbar {
+  --opacity: 0.94;
+}
+
 /* The extra class beats the scoped selector where Ionic declares this variable. */
 ion-action-sheet.ios {
   --button-background-selected: var(--color-surface);

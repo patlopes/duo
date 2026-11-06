@@ -35,5 +35,35 @@ await sharp({ create: { width: 512, height: 512, channels: 3, background } })
   .png({ compressionLevel: 9 })
   .toFile(join(outDir, 'icon-maskable-512.png'));
 
+// iOS shows these while launching; without them the app opens on a blank white screen.
+const SPLASHES = [
+  [1320, 2868],
+  [1206, 2622],
+  [1290, 2796],
+  [1179, 2556],
+  [1284, 2778],
+  [1170, 2532],
+  [1125, 2436],
+  [1242, 2688],
+  [828, 1792],
+  [750, 1334],
+];
+mkdirSync('public/splash', { recursive: true });
+const artSize = 300;
+const art = await flat().resize(artSize, artSize).png().toBuffer();
+const mask = Buffer.from(
+  `<svg width="${artSize}" height="${artSize}"><rect width="${artSize}" height="${artSize}" rx="66" fill="#fff"/></svg>`,
+);
+const rounded = await sharp(art)
+  .composite([{ input: mask, blend: 'dest-in' }])
+  .png()
+  .toBuffer();
+for (const [width, height] of SPLASHES) {
+  await sharp({ create: { width, height, channels: 3, background: '#F7F3EE' } })
+    .composite([{ input: rounded, gravity: 'center' }])
+    .png({ compressionLevel: 9 })
+    .toFile(join('public/splash', `splash-${width}x${height}.png`));
+}
+
 rmSync(rendered, { force: true });
 console.log(`icons written to ${outDir}`);

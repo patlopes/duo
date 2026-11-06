@@ -8,7 +8,9 @@ const BUDGET_KB = 250;
 const dist = 'dist';
 const html = readFileSync(join(dist, 'index.html'), 'utf8');
 
-const assets = [...html.matchAll(/(?:src|href)="\/(assets\/[^"]+\.(?:js|css))"/g)].map((m) => m[1]);
+const assets = [...html.matchAll(/(?:src|href)="[^"]*\/(assets\/[^"]+\.(?:js|css))"/g)].map(
+  (m) => m[1],
+);
 const unique = [...new Set(assets)];
 if (unique.length === 0) throw new Error('No entry assets found in dist/index.html');
 

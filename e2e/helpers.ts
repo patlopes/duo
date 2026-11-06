@@ -50,3 +50,37 @@ export async function expectActiveTitle(page: Page, title: string): Promise<void
 export async function gotoTab(page: Page, label: string): Promise<void> {
   await page.locator('ion-tab-button', { hasText: label }).click();
 }
+
+/** First launch shows the welcome flow. Tests that are not about it skip past it. */
+export async function skipOnboarding(page: Page): Promise<void> {
+  const skip = page.getByRole('button', { name: 'Pular' });
+  await skip.click();
+  await expect(skip).toBeHidden();
+}
+
+export async function loadSeed(page: Page): Promise<void> {
+  await page.goto('tabs/more/settings');
+  await skipOnboarding(page);
+  const version = page.getByRole('button', { name: /versão/ });
+  for (let i = 0; i < 5; i++) await version.click();
+  await page.locator('ion-item', { hasText: 'Carregar dados de exemplo' }).click();
+  await page.locator('ion-alert').getByRole('button', { name: 'Carregar' }).click();
+  await expect(page.getByText('Dados de exemplo carregados.')).toBeVisible({ timeout: 20_000 });
+}
+
+/** Types an amount on the app's own keypad: "1234" reads R$ 12,34. */
+export async function typeAmount(page: Page, digits: string): Promise<void> {
+  const pad = page.getByRole('group', { name: 'Teclado de valor' });
+  for (const d of digits) await pad.getByRole('button', { name: d, exact: true }).click();
+}
+
+export async function openAdd(page: Page, type: string): Promise<void> {
+  await page.getByRole('button', { name: 'Novo lançamento' }).click();
+  await page.locator('ion-action-sheet').getByRole('button', { name: type, exact: true }).click();
+  await expect(page.getByRole('group', { name: 'Teclado de valor' })).toBeVisible();
+}
+
+export async function saveForm(page: Page): Promise<void> {
+  await page.getByRole('button', { name: 'Salvar', exact: true }).click();
+  await expect(page.getByRole('group', { name: 'Teclado de valor' })).toBeHidden();
+}
