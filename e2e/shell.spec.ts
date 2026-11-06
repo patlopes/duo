@@ -89,6 +89,51 @@ test('a primeira visita não anuncia uma versão nova', async ({ page }) => {
   await expect(page.getByText('Nova versão disponível')).toBeHidden();
 });
 
+test('versão nova: aparece sem esperar o cache do sw.js e atualizar recarrega o app', async ({
+  page,
+}) => {
+  await page.goto('./');
+  await skipOnboarding(page);
+  await page.evaluate(() => navigator.serviceWorker.ready);
+  await page.reload();
+  await expectActiveTitle(page, 'Início');
+  await page.waitForTimeout(500);
+  await expect(page.getByText('Nova versão disponível')).toBeHidden();
+
+  // A deploy happened: version.json says so, though nothing else changed on this device yet.
+  // page.route can't see this fetch while a service worker controls the page.
+  await page.evaluate(() => sessionStorage.setItem('fake-deploy', '1'));
+  await page.addInitScript(() => {
+    const realFetch = window.fetch.bind(window);
+    window.fetch = (input, init) =>
+      String(input).includes('version.json') && sessionStorage.getItem('fake-deploy')
+        ? Promise.resolve(Response.json({ build: 'next-deploy' }))
+        : realFetch(input, init);
+  });
+  await page.reload();
+  await expectActiveTitle(page, 'Início');
+  await expect(page.getByText('Nova versão disponível')).toBeVisible({ timeout: 15_000 });
+
+  const reloaded = page.waitForEvent('load');
+  await page.locator('ion-toast').getByRole('button', { name: 'Atualizar' }).click();
+  await reloaded;
+  await expect(page.getByText('Nova versão disponível')).toBeHidden();
+  await expect
+    .poll(() =>
+      page.evaluate(async () => (await navigator.serviceWorker.getRegistration())?.waiting),
+    )
+    .toBeFalsy();
+});
+
+test('sem deploy novo, procurar atualização diz que está em dia', async ({ page }) => {
+  await page.goto('tabs/more/settings');
+  await skipOnboarding(page);
+  await page.evaluate(() => navigator.serviceWorker.ready);
+  await page.reload();
+  await page.getByRole('button', { name: 'Procurar atualização' }).click();
+  await expect(page.getByText('Vocês já estão na versão mais recente.')).toBeVisible();
+});
+
 test('abre sem internet depois da primeira visita', async ({ page, context }) => {
   await page.goto('./');
   await skipOnboarding(page);
@@ -128,7 +173,7 @@ test.describe('telas', () => {
         await shot('home-scrolled');
 
         await gotoTab(page, 'Lançamentos');
-        await expect(page.getByText('Mercado').first()).toBeVisible();
+        await expect(page.getByText('Internet').locator('visible=true').first()).toBeVisible();
         await shot('transactions');
 
         await page.getByRole('button', { name: 'Novo lançamento' }).click();
@@ -142,10 +187,15 @@ test.describe('telas', () => {
         await expect(page.getByRole('group', { name: 'Teclado de valor' })).toBeHidden();
 
         const routes: [string, string, string][] = [
-          ['tabs/planning', 'Planejamento', 'budgets'],
+          ['tabs/planning', 'Planejamento', 'fixed'],
+          ['tabs/planning?view=future', 'Planejamento', 'future'],
+          ['tabs/planning?view=budgets', 'Planejamento', 'budgets'],
+          ['tabs/more/salaries', 'Salários', 'salaries'],
+          ['tabs/more/simulator', 'Simulador', 'simulator'],
+          ['tabs/more/share', 'Compartilhar', 'share'],
           ['tabs/planning?view=goals', 'Planejamento', 'goals'],
           ['tabs/more/couple', 'Acerto do mês', 'couple'],
-          ['tabs/more/incomes', 'Rendas', 'incomes'],
+          ['tabs/more/incomes', 'Outras rendas', 'incomes'],
           ['tabs/more/accounts', 'Contas', 'accounts'],
           ['tabs/more/cards', 'Cartões', 'cards'],
           ['tabs/more/reports', 'Relatórios', 'reports'],

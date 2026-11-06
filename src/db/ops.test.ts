@@ -9,6 +9,8 @@ import {
   createTransfer,
   deleteTransaction,
   deleteTransfer,
+  ensureJointAccount,
+  recordJointDeposit,
   restoreTransfer,
   loadSplitContext,
   payInvoice,
@@ -372,5 +374,42 @@ describe('fechar mês', () => {
     const again = await closeMonth('2026-11', database);
     expect(again.reopenedAt).toBeNull();
     expect(await database.closes.count()).toBe(1);
+  });
+});
+
+describe('contas da casa', () => {
+  it('cria a conjunta só uma vez', async () => {
+    const a = await ensureJointAccount(database);
+    const b = await ensureJointAccount(database);
+    expect(a.id).toBe(b.id);
+    expect(a.type).toBe('joint');
+  });
+
+  it('o depósito registra de quem veio e não duplica contas', async () => {
+    const household = (await database.households.toCollection().first())!;
+    const member = household.memberIds[1];
+    const first = await recordJointDeposit(member, 5_000, '2026-11', NOW, database);
+    const second = await recordJointDeposit(member, 1_000, '2026-11', NOW, database);
+    expect(first.fromAccountId).toBe(second.fromAccountId);
+    const own = await database.accounts.get(first.fromAccountId);
+    expect(own!.ownerMemberId).toBe(member);
+    expect(own!.includeInTotal).toBe(false);
+    expect(first.kind).toBe('joint_deposit');
+  });
+
+  it('a mesma ocorrência gerada em dois aparelhos tem o mesmo id', async () => {
+    await createTransaction(
+      draft({
+        description: 'Aluguel',
+        repeat: { mode: 'recurring', frequency: 'monthly', endDate: null },
+      }),
+      database,
+      NOW,
+    );
+    await syncRecurrences(database, '2027-01-02');
+    const rows = (await liveTx()).filter((t) => t.description === 'Aluguel');
+    const rec = (await database.recurrences.toArray())[0]!;
+    expect(rows.every((t) => t.id === `${rec.id}:${t.date}`)).toBe(true);
+    expect(new Set(rows.map((t) => t.id)).size).toBe(rows.length);
   });
 });

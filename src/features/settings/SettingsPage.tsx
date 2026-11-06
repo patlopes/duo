@@ -15,16 +15,19 @@ import { GroupedList } from '../../ui/GroupedList';
 import { LargeTitlePage } from '../../ui/LargeTitlePage';
 import { Field, Sheet } from '../../ui/parts';
 import { BRAND } from '../../brand';
+import { checkForUpdate } from '../../pwa/register';
 import { NamesSheet } from '../couple/CouplePage';
 import { faceIdAvailable, hashPin, newSalt, registerFaceId } from './lock';
 import { useToast } from '../../ui/useToast';
 
 const BLOCK_LABEL: Record<HomeBlock, string> = {
+  plan: 'Contas de vocês',
+  future: 'Próximo mês',
   summary: 'Saldo e resumo',
   accounts: 'Contas',
   cards: 'Cartões',
-  bills: 'Contas a pagar',
-  categories: 'Gastos por categoria',
+  bills: 'Contas a pagar (detalhado)',
+  categories: 'Para onde vai o dinheiro',
   budgets: 'Orçamentos',
   dreams: 'Sonhos',
   couple: 'Entre vocês',
@@ -73,6 +76,8 @@ function PinSheet({ onClose }: { onClose: () => void }) {
   );
 }
 
+const ANIMAL_NAME = { giraffe: 'girafa', monkey: 'macaquinho' } as const;
+
 export default function SettingsPage() {
   const { settings, members } = useData();
   const presentToast = useToast();
@@ -84,6 +89,16 @@ export default function SettingsPage() {
   const [canFaceId, setCanFaceId] = useState(false);
   const [versionTaps, setVersionTaps] = useState(0);
   const devMode = import.meta.env.DEV || versionTaps >= 5;
+
+  const lookForUpdate = async () => {
+    const result = await checkForUpdate();
+    const message = {
+      found: 'Versão nova encontrada. Baixando…',
+      current: 'Vocês já estão na versão mais recente.',
+      unknown: 'Não deu para verificar agora. Confira a internet.',
+    }[result];
+    void presentToast({ message, duration: 1500, position: 'top' });
+  };
 
   useEffect(() => {
     void faceIdAvailable().then(setCanFaceId);
@@ -154,6 +169,29 @@ export default function SettingsPage() {
             </IonSegmentButton>
           </IonSegment>
         </IonItem>
+        <IonItem>
+          <IonToggle
+            checked={settings.mascots}
+            onIonChange={(e) => void updateSettings({ mascots: e.detail.checked })}
+          >
+            Girafa e macaquinho
+          </IonToggle>
+        </IonItem>
+        {settings.mascots && (
+          <IonItem
+            button
+            detail={false}
+            onClick={() => {
+              const [first, second] = settings.memberAnimals;
+              void updateSettings({ memberAnimals: [second, first] });
+            }}
+          >
+            <IonLabel>Trocar quem é quem</IonLabel>
+            <span slot="end" className="muted subhead">
+              {members[0].name}: {ANIMAL_NAME[settings.memberAnimals[0]]}
+            </span>
+          </IonItem>
+        )}
       </GroupedList>
 
       <GroupedList title="Privacidade">
@@ -286,6 +324,17 @@ export default function SettingsPage() {
         onClick={() => setVersionTaps((n) => n + 1)}
       >
         {BRAND.name} · versão {__BUILD_ID__}
+      </button>
+      <button
+        type="button"
+        className="secondary-button"
+        style={{
+          margin: '0 var(--space-4) var(--space-7)',
+          width: 'calc(100% - 2 * var(--space-4))',
+        }}
+        onClick={() => void lookForUpdate()}
+      >
+        Procurar atualização
       </button>
 
       {pinOpen && (

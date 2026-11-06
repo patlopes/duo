@@ -18,6 +18,18 @@ Patrick pediu para seguir sem parar por fase até o app estar funcional. O statu
 - [ ] **Checklist manual no iPhone:** instalar, offline, safe areas, teclado sobre sheets, swipe-back, share sheet, câmera, Face ID
 - [ ] Desempenho em iPhone de 3 anos
 
+## Virada: as contas do casal
+
+- [x] Salários que entram sozinhos no dia do pagamento, com aumento agendado
+- [x] Início: renda somada, quanto precisam pagar, quanto sobra, divisão pela renda ou metade, quando transferir para a conjunta
+- [x] Contas fixas, contas futuras e parcelas num formulário só; aba Futuro com 12 meses
+- [x] Simulador e projeção de 6 meses
+- [x] Compartilhar por mensagem entre os dois celulares
+- [x] Girafa e macaquinho, animações, tocar no gráfico abre o resumo
+- [x] Navegação testada com toques reais (`e2e/navigation.spec.ts`)
+- [x] Atualização detectada em segundos, com botão em Ajustes
+- [ ] Testar no iPhone: compartilhar, atualização com o app instalado
+
 ## Fora, por ora
 
 - [ ] Fase 7: sync entre os dois celulares

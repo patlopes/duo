@@ -16,6 +16,13 @@
   padding: 0;
   border: 0;
   border-radius: 50%;
-  background: var(--color-primary);
-  color: var(--color-on-primary);
+  background: linear-gradient(145deg, var(--hero-to), var(--hero-from));
+  color: #fff;
+  box-shadow: var(--shadow-floating);
+  transform: translateY(-16px);
+  transition: transform 240ms var(--ease-spring);
+}
+
+.add:active {
+  transform: translateY(-14px) scale(0.9);
 }

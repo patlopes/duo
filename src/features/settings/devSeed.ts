@@ -18,7 +18,7 @@ import type {
   GoalItem,
   GoalMovement,
   Member,
-  MemberIncome,
+  SalaryPlan,
   SplitRule,
   Tag,
 } from '../../schemas/entities';
@@ -37,6 +37,7 @@ export async function loadDevSeed(): Promise<void> {
     'goalItems',
     'goalMovements',
     'incomes',
+    'salaryPlans',
     'closes',
     'rules',
     'importLogs',
@@ -110,20 +111,12 @@ export async function loadDevSeed(): Promise<void> {
   const current = now.slice(0, 7);
   const months = [-4, -3, -2, -1, 0].map((d) => addMonths(current, d));
 
-  const income = (
-    memberId: string,
-    month: string,
-    amountCents: number,
-    type: MemberIncome['type'] = 'salary',
-    counts = true,
-  ) =>
-    upsert<MemberIncome>('incomes', {
-      memberId,
-      competenceMonth: month,
-      type,
-      amountCents,
-      countsForSplit: counts,
-    });
+  const salary = (memberId: string, startMonth: string, amountCents: number, payDay: number) =>
+    upsert<SalaryPlan>('salaryPlans', { memberId, amountCents, payDay, startMonth });
+  await salary(aId, months[0]!, 800_000, 5);
+  await salary(bId, months[0]!, 500_000, 10);
+  await salary(bId, addMonths(current, -1), 550_000, 10);
+  await salary(aId, addMonths(current, 3), 920_000, 5);
 
   const draft = (
     over: Partial<TransactionDraft> &
@@ -149,8 +142,6 @@ export async function loadDevSeed(): Promise<void> {
       (past || `${month}-${String(day).padStart(2, '0')}` <= now ? 'paid' : 'pending') as
         'paid' | 'pending';
     const day = (n: number) => `${month}-${String(n).padStart(2, '0')}`;
-    await income(aId, month, 800_000);
-    await income(bId, month, month >= addMonths(current, -1) ? 550_000 : 500_000);
     await createTransaction(
       draft({
         kind: 'income',
@@ -176,6 +167,8 @@ export async function loadDevSeed(): Promise<void> {
       [contaA.id, 260_000],
       [contaB.id, 170_000],
     ] as const) {
+      // This month one of them still owes the joint account, which is what the app is there to say.
+      if (!past && from === contaB.id) continue;
       await createTransfer({
         kind: 'joint_deposit',
         fromAccountId: from,
@@ -185,6 +178,9 @@ export async function loadDevSeed(): Promise<void> {
         competenceMonth: month,
       });
     }
+
+    // This month is only what the couple pays together; older months keep the fuller history.
+    if (!past) continue;
 
     await createTransaction(
       draft({
@@ -274,7 +270,47 @@ export async function loadDevSeed(): Promise<void> {
     await onCard(cardA.id, 5, 15_000 + i * 900, 'Pessoal do Patrick', 'Pessoal', 'memberA');
     await onCard(cardB.id, 5, 9_900, 'Pessoal da Pessoa B', 'Pessoal', 'memberB');
   }
-  await income(aId, current, 800_000, '13th', false);
+
+  // The bills they set once and that come back on their own, from this month on.
+  const firstDay = (n: number) => `${current}-${String(n).padStart(2, '0')}`;
+  const statusOn = (n: number) => (firstDay(n) <= now ? 'paid' : 'pending') as 'paid' | 'pending';
+  for (const [description, amountCents, n, category] of [
+    ['Aluguel', 240_000, 5, 'Moradia'],
+    ['Condomínio', 62_000, 5, 'Moradia'],
+    ['Luz, água e gás', 24_100, 12, 'Moradia'],
+    ['Internet', 11_990, 15, 'Contas do casal'],
+    ['Plano de saúde', 58_000, 20, 'Contas do casal'],
+  ] as const) {
+    await createTransaction(
+      draft({
+        amountCents,
+        description,
+        date: firstDay(n),
+        categoryId: cat(category),
+        status: statusOn(n),
+        repeat: { mode: 'recurring', frequency: 'monthly', endDate: null },
+      }),
+    );
+  }
+  await createTransaction(
+    draft({
+      amountCents: 950_000,
+      description: 'Fotógrafo do casamento',
+      date: firstDay(10),
+      categoryId: cat('Casamento'),
+      status: 'pending',
+      repeat: { mode: 'installments', count: 10 },
+    }),
+  );
+  await createTransaction(
+    draft({
+      amountCents: 320_000,
+      description: 'Geladeira',
+      date: `${addMonths(current, 2)}-08`,
+      categoryId: cat('Casa nova'),
+      status: 'pending',
+    }),
+  );
 
   // Sofa: 6× R$ 450 on card A, bought two months ago.
   await createTransaction(

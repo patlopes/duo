@@ -25,6 +25,7 @@ import { MonthPicker } from '../../ui/MonthPicker';
 import { ChoiceChips, Field, MoneyField, ProgressBar, Section, Sheet } from '../../ui/parts';
 import { useUi } from '../../ui/uiStore';
 import { useToast } from '../../ui/useToast';
+import { FixedView, FutureView } from './BillsViews';
 
 const STATE_TONE = { calm: 'income', limit: 'warning', over: 'expense' } as const;
 
@@ -414,7 +415,7 @@ function GoalsView({ data }: { data: Data }) {
 export default function PlanningPage() {
   const data = useData();
   const [params] = useSearchParams();
-  const [view, setView] = useState(params.get('view') === 'goals' ? 'goals' : 'budgets');
+  const [view, setView] = useState(params.get('view') ?? 'fixed');
   return (
     <LargeTitlePage title="Planejamento">
       <div className="page-pad" style={{ paddingBottom: 0 }}>
@@ -423,15 +424,24 @@ export default function PlanningPage() {
           value={view}
           onIonChange={(e) => setView(String(e.detail.value))}
         >
+          <IonSegmentButton value="fixed">
+            <IonLabel>Fixas</IonLabel>
+          </IonSegmentButton>
+          <IonSegmentButton value="future">
+            <IonLabel>Futuro</IonLabel>
+          </IonSegmentButton>
           <IonSegmentButton value="budgets">
-            <IonLabel>Orçamentos</IonLabel>
+            <IonLabel>Limites</IonLabel>
           </IonSegmentButton>
           <IonSegmentButton value="goals">
             <IonLabel>Sonhos</IonLabel>
           </IonSegmentButton>
         </IonSegment>
       </div>
-      {view === 'budgets' ? <BudgetsView data={data} /> : <GoalsView data={data} />}
+      {view === 'fixed' && <FixedView />}
+      {view === 'future' && <FutureView />}
+      {view === 'budgets' && <BudgetsView data={data} />}
+      {view === 'goals' && <GoalsView data={data} />}
     </LargeTitlePage>
   );
 }

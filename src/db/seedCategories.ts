@@ -16,6 +16,14 @@ interface SeedCategory {
  */
 export const SEED_CATEGORIES: SeedCategory[] = [
   {
+    key: 'contas-casal',
+    name: 'Contas do casal',
+    kind: 'expense',
+    icon: 'receipt',
+    color: '#6E2F6B',
+    nature: 'essential',
+  },
+  {
     key: 'moradia',
     name: 'Moradia',
     kind: 'expense',

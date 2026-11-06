@@ -22,6 +22,27 @@ ion-tab-button {
   min-width: 0;
 }
 
+/* Ionic clips the bar with `contain`; the raised + button has to be able to leave it. */
+ion-tab-bar {
+  contain: none;
+  overflow: visible;
+  border-top: 0;
+  box-shadow: 0 -6px 24px rgba(70, 40, 60, 0.07);
+}
+
+ion-tab-button.tab-selected svg {
+  animation: tab-pop 420ms var(--ion-tab-ease, cubic-bezier(0.34, 1.56, 0.64, 1));
+}
+
+@keyframes tab-pop {
+  0% {
+    transform: scale(0.72);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
 /* The iOS tab bar label is 10pt on one line. */
 ion-tab-button ion-label {
   font-size: 10px;
@@ -59,16 +80,17 @@ ion-action-sheet.ios {
 .card {
   background: var(--color-surface);
   border-radius: var(--radius-card);
-  border: 0.5px solid var(--color-separator);
+  box-shadow: var(--shadow-card);
   padding: var(--space-4);
 }
 
 .pressable {
-  transition: transform 120ms ease;
+  transition: transform 220ms var(--ease-spring);
 }
 
 .pressable:active {
-  transform: scale(0.97);
+  transform: scale(0.95);
+  transition-duration: 80ms;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -76,6 +98,14 @@ ion-action-sheet.ios {
   .pressable:active {
     transition: none;
     transform: none;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
   }
 }
 
@@ -86,4 +116,19 @@ ion-action-sheet.ios {
   overflow: hidden;
   clip-path: inset(50%);
   white-space: nowrap;
+}
+
+/* Large titles and every important number speak in the rounded display face. */
+ion-title.title-large {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+}
+
+ion-list.list-inset {
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+}
+
+ion-modal {
+  --border-radius: var(--radius-sheet);
 }

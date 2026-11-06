@@ -1,6 +1,6 @@
 # Meu Bem (codinome Duo)
 
-PWA de finanças para um casal que divide despesas proporcionalmente à renda. iPhone primeiro, local-first, sem servidor na v1.
+PWA que responde o que um casal precisa pagar **junto**: renda somada, contas, quanto cabe a cada um e quanto sobra. Não é rastreador de gastos individuais. iPhone primeiro, local-first, sem servidor.
 
 ## Convenções
 
@@ -20,6 +20,7 @@ PWA de finanças para um casal que divide despesas proporcionalmente à renda. i
 - `npm run e2e`: Playwright WebKit sobre o build (rode `npm run build` antes)
 - `npm run lint`, `npm run typecheck`, `npm run check:bundle`
 - `npm run icons`: regenera `public/icons` a partir de `assets/icon/master.svg`
+- `npm run mascots`: regenera `public/mascots` a partir de `assets/mascots`
 - `npm run release`: publica o commit atual no GitHub Pages (exige árvore limpa)
 - `npm run setup:webkit`: prepara o WebKit nesta máquina, que não tem sudo nem `libavif16`
 
@@ -33,7 +34,7 @@ PWA de finanças para um casal que divide despesas proporcionalmente à renda. i
 - `src/ui`: design system
 - `src/pwa`: service worker, instalação, diagnóstico
 - UI: Ionic React em modo `ios`, com react-router 6. Rotas em `App.tsx` e `features/shell/TabsLayout.tsx`.
-- Sem sync até a Fase 7, mas toda entidade já nasce com UUID v7, `createdAt`/`updatedAt`/`deletedAt` e `householdId`.
+- Sem servidor: os celulares trocam dados por mensagem (`src/io/coupleSync.ts`). Toda entidade já nasce com UUID v7, `createdAt`/`updatedAt`/`deletedAt` e `householdId`.
 
 ## Publicação
 
@@ -54,4 +55,7 @@ PWA de finanças para um casal que divide despesas proporcionalmente à renda. i
 - Toda cor nova de fundo ou texto usada pelo Ionic precisa da variante `-rgb`, ou a translucidez volta a ser branca no modo escuro.
 - O Playwright no Linux não tem safe area nem standalone. `e2e/helpers.ts` simula o notch; o resto só no iPhone real.
 - A raiz do disco está quase cheia: caches de npm e navegadores ficam em `../tools/`.
+- Rotas com `React.lazy` deixam a tela em branco e sem voltar enquanto carregam: páginas roteadas são importadas direto.
+- Voltar restaura a rolagem e esconde o large title: nos testes de navegação, confira o título da toolbar.
+- `page.route` não enxerga `fetch` da página com service worker ativo no WebKit: simule com `addInitScript`.
 - Abra os screenshots antes de dar uma fase por pronta: a tab bar branca no escuro e os rótulos quebrados passaram nos testes.

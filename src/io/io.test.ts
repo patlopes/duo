@@ -461,6 +461,8 @@ function snapshot(over: Partial<Data> = {}): Data {
     closes: [],
     rules: [],
     settings: {} as Data['settings'],
+    salaryPlans: [],
+    splitMode: 'proportional',
     ...over,
   };
 }

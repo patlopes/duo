@@ -4,23 +4,18 @@ import { lazy, Suspense, useEffect } from 'react';
 import { Navigate, Route } from 'react-router-dom';
 import { DataProvider, useData } from './db/DataContext';
 import { today } from './domain/months';
+import DebugPage from './features/debug/DebugPage';
 import { TabsLayout } from './features/shell/TabsLayout';
+import InstallGuidePage from './pwa/InstallGuidePage';
 import { UpdateToast } from './pwa/UpdateToast';
 import { useThemeSync } from './ui/useThemeSync';
 
-const DebugPage = lazy(() => import('./features/debug/DebugPage'));
-const InstallGuidePage = lazy(() => import('./pwa/InstallGuidePage'));
+// Ionic's stack needs a routed page to exist the moment it is navigated to: a lazy one leaves a blank
+// screen with no back button while its code loads. Only overlays, which it does not manage, are lazy.
 const TransactionFormHost = lazy(() => import('./features/form/TransactionForm'));
 const Onboarding = lazy(() => import('./features/onboarding/Onboarding'));
 const LockGate = lazy(() => import('./features/settings/LockGate'));
-
-/** Screens are split so the first paint stays small; this fetches them right after it. */
-function preloadScreens() {
-  void import('./features/form/TransactionForm');
-  void import('./features/transactions/TransactionsPage');
-  void import('./features/settings/MorePage');
-  void import('./features/planning/PlanningPage');
-}
+const BillFormHost = lazy(() => import('./features/bills/BillForm'));
 
 function Overlays() {
   const { settings, transactions } = useData();
@@ -35,14 +30,10 @@ function Overlays() {
     else void navigator.clearAppBadge?.()?.catch(() => undefined);
   }, [dueCount]);
 
-  useEffect(() => {
-    const id = setTimeout(preloadScreens, 800);
-    return () => clearTimeout(id);
-  }, []);
-
   return (
     <Suspense fallback={null}>
       <TransactionFormHost />
+      <BillFormHost />
       {!settings.onboarded && <Onboarding />}
       {settings.lockEnabled && <LockGate />}
     </Suspense>
@@ -59,22 +50,8 @@ export function App() {
           <IonRouterOutlet>
             <Route path="/" element={<Navigate to="/tabs/home" replace />} />
             <Route path="/tabs/*" element={<TabsLayout />} />
-            <Route
-              path="/debug"
-              element={
-                <Suspense fallback={null}>
-                  <DebugPage />
-                </Suspense>
-              }
-            />
-            <Route
-              path="/install"
-              element={
-                <Suspense fallback={null}>
-                  <InstallGuidePage />
-                </Suspense>
-              }
-            />
+            <Route path="/debug" element={<DebugPage />} />
+            <Route path="/install" element={<InstallGuidePage />} />
           </IonRouterOutlet>
         </IonReactRouter>
         <Overlays />

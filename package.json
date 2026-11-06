@@ -16,7 +16,8 @@
     "icons": "node scripts/build-icons.mjs",
     "setup:webkit": "bash scripts/setup-webkit-linux.sh",
     "release": "node scripts/release.mjs",
-    "serve:release": "node scripts/serve-release.mjs"
+    "serve:release": "node scripts/serve-release.mjs",
+    "mascots": "node scripts/build-mascots.mjs"
   },
   "type": "module",
   "private": true,
@@ -37,7 +38,6 @@
     "react-virtuoso": "^4.18.20",
     "recharts": "^3.10.1",
     "uuid": "^14.0.3",
-    "workbox-window": "^7.4.1",
     "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz",
     "zod": "^4.6.7",
     "zustand": "^5.1.0"

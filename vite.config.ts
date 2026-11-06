@@ -17,18 +17,35 @@ function gitSha(): string {
 /** Root by default. A host that serves the app under a subpath sets DUO_BASE, e.g. `/meu-bem/`. */
 const BASE = process.env.DUO_BASE ?? '/';
 
+const buildId = gitSha();
+
+/** What the app polls to learn about a new deploy: never precached, so it always reaches the network. */
+const versionFile = {
+  name: 'duo-version-file',
+  generateBundle(this: {
+    emitFile: (file: { type: 'asset'; fileName: string; source: string }) => void;
+  }) {
+    this.emitFile({
+      type: 'asset',
+      fileName: 'version.json',
+      source: JSON.stringify({ build: buildId }),
+    });
+  },
+};
+
 export default defineConfig({
   base: BASE,
   define: {
-    __BUILD_ID__: JSON.stringify(gitSha()),
+    __BUILD_ID__: JSON.stringify(buildId),
     __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
   },
   plugins: [
     react(),
+    versionFile,
     VitePWA({
       registerType: 'prompt',
       injectRegister: false,
-      includeAssets: ['icons/apple-touch-icon-180.png', 'icons/favicon-64.png'],
+      includeAssets: ['icons/apple-touch-icon-180.png', 'icons/favicon-64.png', 'mascots/*.webp'],
       manifest: {
         id: BASE,
         name: BRAND.name,

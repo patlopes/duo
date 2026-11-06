@@ -37,7 +37,15 @@ export interface FormRequest {
   goalItemId?: string;
 }
 
+export interface BillRequest {
+  mode?: 'recurring' | 'once' | 'installments';
+  transaction?: Transaction;
+}
+
 interface UiState {
+  bill: BillRequest | null;
+  openBill: (request: BillRequest) => void;
+  closeBill: () => void;
   month: string;
   filters: TxFilters;
   form: FormRequest | null;
@@ -49,6 +57,9 @@ interface UiState {
 }
 
 export const useUi = create<UiState>((set) => ({
+  bill: null,
+  openBill: (bill) => set({ bill }),
+  closeBill: () => set({ bill: null }),
   month: monthOf(today()),
   filters: EMPTY_FILTERS,
   form: null,

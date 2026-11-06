@@ -264,6 +264,19 @@ export const CategoryRuleSchema = z.strictObject({
 });
 export type CategoryRule = z.infer<typeof CategoryRuleSchema>;
 
+/**
+ * One salary from a month on. A raise is simply a new row with a later start, which is what lets a
+ * future raise be planned today and take effect by itself.
+ */
+export const SalaryPlanSchema = z.strictObject({
+  ...base,
+  memberId: id,
+  amountCents: cents,
+  payDay: dayOfMonth,
+  startMonth: MonthSchema,
+});
+export type SalaryPlan = z.infer<typeof SalaryPlanSchema>;
+
 export const ChangeOpSchema = z.object({
   table: z.string(),
   id: z.string(),
@@ -310,5 +323,6 @@ export const ENTITY_SCHEMAS = {
   incomes: MemberIncomeSchema,
   closes: MonthCloseSchema,
   rules: CategoryRuleSchema,
+  salaryPlans: SalaryPlanSchema,
 } as const;
 export type EntityTableName = keyof typeof ENTITY_SCHEMAS;

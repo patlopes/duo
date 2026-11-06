@@ -14,11 +14,14 @@ import type {
   MemberIncome,
   MonthClose,
   Recurrence,
+  SalaryPlan,
   Tag,
   Transaction,
   Transfer,
 } from '../schemas/entities';
 import type { Settings } from '../schemas/settingsDefaults';
+import { today } from '../domain/months';
+import { mergeSalaryIncomes } from '../domain/salary';
 import { db, readSettings } from './database';
 
 export interface Data {
@@ -38,7 +41,9 @@ export interface Data {
   incomes: MemberIncome[];
   closes: MonthClose[];
   rules: CategoryRule[];
+  salaryPlans: SalaryPlan[];
   settings: Settings;
+  splitMode: Settings['splitMode'];
 }
 
 const alive = <T extends { deletedAt: string | null }>(rows: T[]) =>
@@ -55,6 +60,8 @@ async function loadData(): Promise<Data | null> {
   const members = alive(await db.members.toArray());
   const ordered = household.memberIds.map((id) => members.find((m) => m.id === id));
   if (!ordered[0] || !ordered[1]) return null;
+  const settings = await readSettings();
+  const salaryPlans = alive(await db.salaryPlans.toArray());
   return {
     household,
     members: [ordered[0], ordered[1]],
@@ -69,10 +76,13 @@ async function loadData(): Promise<Data | null> {
     goals: alive(await db.goals.toArray()),
     goalItems: alive(await db.goalItems.toArray()),
     goalMovements: alive(await db.goalMovements.toArray()),
-    incomes: alive(await db.incomes.toArray()),
+    // Salaries show up as income on their own, month after month, with no one typing them in.
+    incomes: mergeSalaryIncomes(alive(await db.incomes.toArray()), salaryPlans, today()),
     closes: alive(await db.closes.toArray()),
     rules: alive(await db.rules.toArray()),
-    settings: await readSettings(),
+    salaryPlans,
+    settings,
+    splitMode: settings.splitMode,
   };
 }
 
@@ -88,7 +98,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!data) return;
     // Recurring bills are generated ahead of time; this only tops up what is missing.
-    void import('./ops').then((ops) => ops.syncRecurrences());
+    void import('./ops').then((ops) => {
+      void ops.syncRecurrences();
+      void ops.ensureCoupleCategory();
+    });
     // Runs once per launch: `data` changing later must not re-trigger it.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data !== undefined && data !== null]);

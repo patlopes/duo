@@ -211,7 +211,23 @@ export function AccountsPage() {
             }
           />
         ) : (
-          <div className="card-list">{active.map(row)}</div>
+          <>
+            <p className="group-label">Conjunta</p>
+            <div className="card-list">
+              {active.filter((a) => a.type === 'joint').map(row)}
+              {!active.some((a) => a.type === 'joint') && (
+                <button type="button" className="row" onClick={() => setCreating(true)}>
+                  Criar a conta conjunta
+                </button>
+              )}
+            </div>
+            <p className="group-label">Pessoais</p>
+            <div className="card-list">{active.filter((a) => a.type !== 'joint').map(row)}</div>
+            <p className="small muted" style={{ margin: 'var(--space-2)' }}>
+              As pessoais só servem para registrar de onde veio o dinheiro. Não precisam de saldo
+              nem de lançamentos.
+            </p>
+          </>
         )}
         {archived.length > 0 && (
           <Section title="Arquivadas">

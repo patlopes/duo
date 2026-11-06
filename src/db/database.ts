@@ -15,6 +15,7 @@ import type {
   MemberIncome,
   MonthClose,
   Recurrence,
+  SalaryPlan,
   Tag,
   Transaction,
   Transfer,
@@ -44,6 +45,7 @@ export type DuoDatabase = Dexie & {
   incomes: EntityTable<MemberIncome, 'id'>;
   closes: EntityTable<MonthClose, 'id'>;
   rules: EntityTable<CategoryRule, 'id'>;
+  salaryPlans: EntityTable<SalaryPlan, 'id'>;
   attachments: EntityTable<Attachment, 'id'>;
   importLogs: EntityTable<ImportLog, 'id'>;
 };
@@ -72,6 +74,7 @@ export function createDatabase(name = 'duo'): DuoDatabase {
     attachments: 'id, transactionId',
     importLogs: 'id, appliedAt',
   });
+  db.version(3).stores({ salaryPlans: 'id, memberId' });
   return db;
 }
 

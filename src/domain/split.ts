@@ -21,6 +21,8 @@ export interface SplitContext {
   closes: MonthClose[];
   transactions: Transaction[];
   transfers: Transfer[];
+  /** The couple's choice. Half each overrides income, except in months already closed. */
+  splitMode?: 'proportional' | 'equal';
 }
 
 function incomeOf(ctx: SplitContext, memberId: string, month: string): number {
@@ -36,6 +38,9 @@ function activeClose(ctx: SplitContext, month: string): MonthClose | undefined {
 /** Share of member A. A closed month keeps its snapshot; a month with no income inherits the last. */
 export function memberAPct(ctx: SplitContext, month: string): number {
   const [a, b] = ctx.household.memberIds;
+  const closed = activeClose(ctx, month);
+  if (closed?.pctByMember[a] !== undefined) return closed.pctByMember[a];
+  if (ctx.splitMode === 'equal') return 0.5;
   let current = month;
   for (let hops = 0; hops < 120; hops++) {
     const close = activeClose(ctx, current);

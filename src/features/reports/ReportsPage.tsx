@@ -14,6 +14,7 @@ import { MoneyText } from '../../ui/MoneyText';
 import { MonthPicker } from '../../ui/MonthPicker';
 import { ChoiceChips, Section, Skeleton } from '../../ui/parts';
 import { useUi } from '../../ui/uiStore';
+import { MonthSummarySheet } from './MonthSummarySheet';
 import {
   cashFlow,
   compareCategories,
@@ -37,6 +38,7 @@ export default function ReportsPage() {
   const presentToast = useToast();
   const [drillId, setDrillId] = useState<string | null>(params.get('category'));
   const [range, setRange] = useState<'6' | '12'>('6');
+  const [pickedMonth, setPickedMonth] = useState<string | null>(null);
   const [dimension, setDimension] = useState<'tag' | 'account' | 'card'>('account');
   const hidden = data.settings.hideValues;
 
@@ -67,6 +69,7 @@ export default function ReportsPage() {
       balanceSeries(data.accounts, data.transactions, data.transfers, month, Number(range)).map(
         (p) => ({
           label: monthShort(p.month),
+          month: p.month,
           balance: p.balanceCents,
         }),
       ),
@@ -126,6 +129,10 @@ export default function ReportsPage() {
             ) : (
               <div className="donut-wrap" style={{ justifyContent: 'center' }}>
                 <Donut
+                  onSlice={(i) => {
+                    const id = slices[i]?.categoryId;
+                    if (id && !drillId) setDrillId(id);
+                  }}
                   slices={slices.slice(0, 8)}
                   label={`Despesas: ${slices.map((s) => `${s.name} ${Math.round(s.share * 100)}%`).join(', ')}`}
                 />
@@ -208,7 +215,12 @@ export default function ReportsPage() {
           />
           <div className="card" style={{ marginTop: 'var(--space-2)' }}>
             <Suspense fallback={<Skeleton height={220} />}>
-              <GroupedBars rows={bars} series={[INCOME, EXPENSE]} hidden={hidden} />
+              <GroupedBars
+                rows={bars}
+                series={[INCOME, EXPENSE]}
+                hidden={hidden}
+                onPick={(i) => setPickedMonth(bars[i]?.month ?? null)}
+              />
             </Suspense>
           </div>
         </Section>
@@ -220,6 +232,7 @@ export default function ReportsPage() {
                 rows={series}
                 series={[{ key: 'balance', label: 'Saldo', color: 'var(--color-primary)' }]}
                 hidden={hidden}
+                onPick={(i) => setPickedMonth(series[i]?.month ?? null)}
               />
             </Suspense>
           </div>
@@ -332,6 +345,9 @@ export default function ReportsPage() {
           </button>
         </div>
       </div>
+      {pickedMonth && (
+        <MonthSummarySheet month={pickedMonth} onClose={() => setPickedMonth(null)} />
+      )}
     </LargeTitlePage>
   );
 }

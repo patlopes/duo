@@ -2,17 +2,21 @@
 
 export type ThemeMode = 'system' | 'light' | 'dark';
 export type TxFormType = 'expense' | 'income' | 'card' | 'transfer';
+export type Animal = 'giraffe' | 'monkey';
+export type SplitMode = 'proportional' | 'equal';
 
 export const SETTINGS_ID = 'settings';
 
 export const HOME_BLOCKS = [
+  'plan',
+  'dreams',
+  'future',
+  'categories',
   'summary',
   'accounts',
   'cards',
   'bills',
-  'categories',
   'budgets',
-  'dreams',
   'couple',
 ] as const;
 export type HomeBlock = (typeof HOME_BLOCKS)[number];
@@ -53,6 +57,12 @@ export interface Settings {
   /** Personal expenses of the other member stay out of the list on this phone (spec 2.10). */
   deviceMemberIndex: 0 | 1;
   showOtherPersonal: boolean;
+  /** How the couple splits shared bills: by income, or half each. */
+  splitMode: SplitMode;
+  lastSyncAt: string | null;
+  lastSyncSentAt: string | null;
+  mascots: boolean;
+  memberAnimals: [Animal, Animal];
   updatedAt: string;
 }
 
@@ -63,7 +73,8 @@ export const DEFAULT_SETTINGS: Settings = {
   installGuideDismissed: false,
   onboarded: false,
   homeBlocks: [...HOME_BLOCKS],
-  hiddenHomeBlocks: [],
+  // The app is about shared bills: full tracking stays available, but out of the first screen.
+  hiddenHomeBlocks: ['summary', 'accounts', 'cards', 'bills', 'budgets', 'couple'],
   lockEnabled: false,
   lockSalt: null,
   lockHash: null,
@@ -83,12 +94,28 @@ export const DEFAULT_SETTINGS: Settings = {
   csvPresets: [],
   deviceMemberIndex: 0,
   showOtherPersonal: false,
+  splitMode: 'proportional',
+  lastSyncAt: null,
+  lastSyncSentAt: null,
+  mascots: true,
+  memberAnimals: ['giraffe', 'monkey'],
   updatedAt: new Date(0).toISOString(),
 };
 
 /** Rows saved by older versions lack newer fields, and new home blocks must appear for them too. */
 export function withDefaults(stored: Partial<Settings> | undefined): Settings {
-  const merged = { ...DEFAULT_SETTINGS, ...stored };
+  // Layouts saved before the shared-bills home get the new one: their order no longer means anything.
+  const legacy = stored?.homeBlocks && !stored.homeBlocks.includes('plan');
+  const merged = {
+    ...DEFAULT_SETTINGS,
+    ...stored,
+    ...(legacy
+      ? {
+          homeBlocks: DEFAULT_SETTINGS.homeBlocks,
+          hiddenHomeBlocks: DEFAULT_SETTINGS.hiddenHomeBlocks,
+        }
+      : {}),
+  };
   const known = new Set(merged.homeBlocks);
   return {
     ...merged,

@@ -232,6 +232,9 @@ function toRow(draft: TransactionDraft, hid: string, over: Partial<Transaction> 
 
 const HORIZON_MONTHS = 12;
 
+/** Derived, not random: two phones topping up the same bill must produce the same row, not a duplicate. */
+const occurrenceId = (recurrenceId: string, date: string) => `${recurrenceId}:${date}`;
+
 function horizon(now: string): string {
   return lastDayOf(addMonths(monthOf(now), HORIZON_MONTHS));
 }
@@ -301,7 +304,11 @@ export async function createTransaction(
             source: 'recurrence',
           },
           hid,
-          { recurrenceId: recurrence!.id, status: i === 0 ? draft.status : 'pending' },
+          {
+            id: occurrenceId(recurrence!.id, date),
+            recurrenceId: recurrence!.id,
+            status: i === 0 ? draft.status : 'pending',
+          },
         ),
       );
     });
@@ -502,7 +509,7 @@ export async function syncRecurrences(
           invoiceMonth: card ? invoiceMonthFor(date, card) : null,
         },
         recurrence.householdId,
-        { recurrenceId: recurrence.id },
+        { id: occurrenceId(recurrence.id, date), recurrenceId: recurrence.id },
       ),
     );
     await database.transaction('rw', database.transactions, database.recurrences, async () => {
@@ -716,6 +723,98 @@ export async function closeMonth(month: string, database: DuoDatabase = db): Pro
 export async function reopenMonth(month: string, database: DuoDatabase = db): Promise<void> {
   const row = await database.closes.get(month);
   if (row) await upsert<MonthClose>('closes', { ...row, reopenedAt: nowIso() }, database);
+}
+
+/** The shared account the whole app revolves around. Created on demand for older installs. */
+export async function ensureJointAccount(database: DuoDatabase = db): Promise<Account> {
+  const accounts = (await database.accounts.toArray()).filter((a) => !a.deletedAt && !a.archived);
+  const existing = accounts.find((a) => a.type === 'joint');
+  if (existing) return existing;
+  return upsert<Account>(
+    'accounts',
+    {
+      name: 'Conta conjunta',
+      type: 'joint',
+      ownerMemberId: null,
+      initialBalanceCents: 0,
+      color: '#6E2F6B',
+      icon: 'house',
+      includeInTotal: true,
+      archived: false,
+    },
+    database,
+  );
+}
+
+/** Deposits need a source to say whose money it was, even if nobody tracks that personal account. */
+export async function ensurePersonalAccount(
+  memberId: string,
+  database: DuoDatabase = db,
+): Promise<Account> {
+  const accounts = (await database.accounts.toArray()).filter((a) => !a.deletedAt && !a.archived);
+  const existing = accounts.find((a) => a.ownerMemberId === memberId && a.type !== 'joint');
+  if (existing) return existing;
+  const member = await database.members.get(memberId);
+  return upsert<Account>(
+    'accounts',
+    {
+      name: `Conta de ${member?.name ?? 'pessoa'}`,
+      type: 'checking',
+      ownerMemberId: memberId,
+      initialBalanceCents: 0,
+      color: '#3A6EA5',
+      icon: 'bank',
+      includeInTotal: false,
+      archived: false,
+    },
+    database,
+  );
+}
+
+/** "Transferi": moves a member's part into the joint account for the month. */
+export async function recordJointDeposit(
+  memberId: string,
+  amountCents: number,
+  month: string,
+  date: string,
+  database: DuoDatabase = db,
+): Promise<Transfer> {
+  const joint = await ensureJointAccount(database);
+  const own = await ensurePersonalAccount(memberId, database);
+  return createTransfer(
+    {
+      kind: 'joint_deposit',
+      fromAccountId: own.id,
+      toAccountId: joint.id,
+      amountCents,
+      date,
+      competenceMonth: month,
+    },
+    database,
+  );
+}
+
+/** Fixed id: both phones of a couple add this to older installs and must end up with the same row. */
+export const COUPLE_BILLS_CATEGORY_ID = 'cat-contas-do-casal';
+
+export async function ensureCoupleCategory(database: DuoDatabase = db): Promise<void> {
+  const rows = await database.categories.toArray();
+  if (rows.some((c) => c.name === 'Contas do casal')) return;
+  const household = await database.households.toCollection().first();
+  if (!household) return;
+  await database.categories.put({
+    ...stamp(household.id),
+    id: COUPLE_BILLS_CATEGORY_ID,
+    name: 'Contas do casal',
+    kind: 'expense',
+    parentId: null,
+    icon: 'receipt',
+    color: '#6E2F6B',
+    nature: 'essential',
+    defaultSplitRule: 'proportional',
+    archived: false,
+    system: false,
+  });
 }
 
 export function rememberCategory(settings: Settings, categoryId: string): string[] {

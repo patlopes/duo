@@ -12,6 +12,7 @@ import {
 } from '../../db/ops';
 import { formatBRLRound } from '../../domain/money';
 import { addMonths, monthLabel, today } from '../../domain/months';
+import { isGeneratedIncome } from '../../domain/salary';
 import { computeSettlement, isMonthClosed, suggestJointDeposits } from '../../domain/split';
 import type { Member, MemberIncome } from '../../schemas/entities';
 import { LargeTitlePage } from '../../ui/LargeTitlePage';
@@ -140,7 +141,7 @@ export function CouplePage() {
             {!hasIncome && (
               <p className="summary-sentence">
                 Sem renda lançada neste mês: usando o percentual do mês anterior.{' '}
-                <Link to="/tabs/more/incomes" className="tone-link">
+                <Link to="/tabs/more/salaries" className="tone-link">
                   Lançar rendas
                 </Link>
               </p>
@@ -552,12 +553,13 @@ export function IncomesPage() {
   const [editing, setEditing] = useState<MemberIncome | null>(null);
   const [creating, setCreating] = useState(false);
   const closed = isMonthClosed(data.closes, month);
-  const rows = data.incomes.filter((i) => i.competenceMonth === month);
+  const rows = data.incomes.filter((i) => i.competenceMonth === month && !isGeneratedIncome(i));
   const name = (id: string) => data.members.find((m) => m.id === id)?.name ?? '';
 
   const copyPrevious = async () => {
     const previous = data.incomes.filter(
-      (i) => i.competenceMonth === addMonths(month, -1) && i.countsForSplit,
+      (i) =>
+        i.competenceMonth === addMonths(month, -1) && i.countsForSplit && !isGeneratedIncome(i),
     );
     for (const { id: _id, createdAt: _c, updatedAt: _u, ...rest } of previous) {
       await upsert<MemberIncome>('incomes', { ...rest, competenceMonth: month });
@@ -566,7 +568,7 @@ export function IncomesPage() {
 
   return (
     <LargeTitlePage
-      title="Rendas"
+      title="Outras rendas"
       backHref="/tabs/more"
       toolbarEnd={
         <button type="button" className="link-button" onClick={() => setCreating(true)}>

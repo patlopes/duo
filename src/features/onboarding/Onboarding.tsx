@@ -1,66 +1,66 @@
-import { HandCoinsIcon, ReceiptIcon, TargetIcon } from '@phosphor-icons/react';
 import { useState, type ReactNode } from 'react';
 import { BRAND } from '../../brand';
 import { useData } from '../../db/DataContext';
-import { updateSettings, upsert } from '../../db/ops';
-import type { Account, Member } from '../../schemas/entities';
+import { ensureJointAccount, ensurePersonalAccount, updateSettings, upsert } from '../../db/ops';
+import { monthOf, today } from '../../domain/months';
+import type { Member, SalaryPlan } from '../../schemas/entities';
+import { Mascot } from '../../ui/Mascot';
 import { Field, MoneyField } from '../../ui/parts';
 
-const SLIDES: { icon: ReactNode; title: string; text: string }[] = [
+const SLIDES: { art: ReactNode; title: string; text: string }[] = [
   {
-    icon: <ReceiptIcon size={48} aria-hidden="true" />,
-    title: 'Lance um gasto em segundos',
-    text: 'Abriu, tocou no +, digitou o valor e escolheu a categoria. Funciona mesmo sem internet.',
+    art: (
+      <>
+        <Mascot animal="giraffe" idle />
+        <Mascot animal="monkey" idle delay={0.7} />
+      </>
+    ),
+    title: 'As contas que vocês pagam juntos',
+    text: 'Moradia, casamento, compras da casa. O que cada um gasta sozinho não entra aqui.',
   },
   {
-    icon: <HandCoinsIcon size={48} aria-hidden="true" />,
-    title: 'Dividam de um jeito justo',
-    text: 'Cada um paga na proporção da própria renda, e o app diz quem acerta com quem no fim do mês.',
+    art: <Mascot animal="monkey" pose="wink" idle />,
+    title: 'Sem fazer conta',
+    text: 'Digam o salário de cada um e quanto precisam pagar. O app diz quanto cabe a cada um, pela renda ou meio a meio.',
   },
   {
-    icon: <TargetIcon size={48} aria-hidden="true" />,
-    title: 'Realizem sonhos juntos',
-    text: 'Casamento, viagem, entrada do apê: vocês veem quanto falta e se estão no ritmo.',
+    art: <Mascot animal="giraffe" pose="cheer" />,
+    title: 'Vejam o mês que vem de longe',
+    text: 'Quanto vai sobrar, quando transferir para a conjunta e o que muda se vier um aumento.',
   },
 ];
 
 export default function Onboarding() {
-  const { members, accounts } = useData();
+  const { members } = useData();
   const [step, setStep] = useState(0);
-  const [nameA, setNameA] = useState(members[0].name === 'Patrick' ? 'Patrick' : members[0].name);
+  const [nameA, setNameA] = useState(members[0].name);
   const [nameB, setNameB] = useState(members[1].name === 'Pessoa B' ? '' : members[1].name);
-  const [balance, setBalance] = useState(0);
+  const [salaryA, setSalaryA] = useState(0);
+  const [salaryB, setSalaryB] = useState(0);
+  const [dayA, setDayA] = useState('5');
+  const [dayB, setDayB] = useState('5');
 
-  const finish = async (createNamed: boolean) => {
-    const a = nameA.trim() || members[0].name;
-    const b = nameB.trim() || members[1].name;
-    if (createNamed) {
-      await upsert<Member>('members', { ...members[0], name: a });
-      await upsert<Member>('members', { ...members[1], name: b });
+  const finish = async (useForm: boolean) => {
+    if (useForm) {
+      if (nameA.trim()) await upsert<Member>('members', { ...members[0], name: nameA.trim() });
+      if (nameB.trim()) await upsert<Member>('members', { ...members[1], name: nameB.trim() });
+      const startMonth = monthOf(today());
+      const save = (memberId: string, amountCents: number, payDay: string) =>
+        amountCents > 0
+          ? upsert<SalaryPlan>('salaryPlans', {
+              memberId,
+              amountCents,
+              payDay: Math.min(31, Math.max(1, Number(payDay) || 5)),
+              startMonth,
+            })
+          : null;
+      await save(members[0].id, salaryA, dayA);
+      await save(members[1].id, salaryB, dayB);
     }
-    // The form needs somewhere to put the first expense, even if the guide was skipped.
-    if (accounts.length === 0) {
-      await upsert<Account>('accounts', {
-        name: `Conta de ${a}`,
-        type: 'checking',
-        ownerMemberId: members[0].id,
-        initialBalanceCents: balance,
-        color: '#3A6EA5',
-        icon: 'bank',
-        includeInTotal: true,
-        archived: false,
-      });
-      await upsert<Account>('accounts', {
-        name: `Conta de ${b}`,
-        type: 'checking',
-        ownerMemberId: members[1].id,
-        initialBalanceCents: 0,
-        color: '#D9774B',
-        icon: 'bank',
-        includeInTotal: true,
-        archived: false,
-      });
-    }
+    // Everything the home screen offers needs these, even if the welcome was skipped.
+    await ensureJointAccount();
+    await ensurePersonalAccount(members[0].id);
+    await ensurePersonalAccount(members[1].id);
     await updateSettings({ onboarded: true });
   };
 
@@ -79,17 +79,19 @@ export default function Onboarding() {
           Pular
         </button>
       </div>
-      <div className="onboarding-body">
+      <div className="onboarding-body" key={step}>
         {onSlide && slide ? (
-          <>
-            <div className="onboarding-art">{slide.icon}</div>
+          <div className="rise">
+            <div className="mascot-onboarding">{slide.art}</div>
             <h1>{slide.title}</h1>
             <p>{slide.text}</p>
-          </>
+          </div>
         ) : (
-          <>
+          <div className="rise">
             <h1>Quem são vocês?</h1>
-            <p style={{ marginBottom: 'var(--space-4)' }}>Dá para mudar depois, em Ajustes.</p>
+            <p style={{ marginBottom: 'var(--space-4)' }}>
+              O salário é o líquido. Dá para ajustar depois.
+            </p>
             <Field label="Seu nome">
               <input
                 className="input"
@@ -98,6 +100,20 @@ export default function Onboarding() {
                 onChange={(e) => setNameA(e.target.value)}
               />
             </Field>
+            <div className="two-cols">
+              <Field label="Seu salário">
+                <MoneyField value={salaryA} onChange={setSalaryA} ariaLabel="Seu salário" />
+              </Field>
+              <Field label="Cai no dia">
+                <input
+                  className="input tabular"
+                  inputMode="numeric"
+                  aria-label="Dia do seu pagamento"
+                  value={dayA}
+                  onChange={(e) => setDayA(e.target.value.replace(/\D/g, '').slice(0, 2))}
+                />
+              </Field>
+            </div>
             <Field label="Nome de quem divide com você">
               <input
                 className="input"
@@ -106,15 +122,25 @@ export default function Onboarding() {
                 onChange={(e) => setNameB(e.target.value)}
               />
             </Field>
-            <Field label="Quanto há na sua conta hoje (opcional)">
-              <MoneyField
-                value={balance}
-                onChange={setBalance}
-                allowNegative
-                ariaLabel="Saldo inicial"
-              />
-            </Field>
-          </>
+            <div className="two-cols">
+              <Field label="Salário">
+                <MoneyField
+                  value={salaryB}
+                  onChange={setSalaryB}
+                  ariaLabel="Salário de quem divide com você"
+                />
+              </Field>
+              <Field label="Cai no dia">
+                <input
+                  className="input tabular"
+                  inputMode="numeric"
+                  aria-label="Dia do pagamento de quem divide com você"
+                  value={dayB}
+                  onChange={(e) => setDayB(e.target.value.replace(/\D/g, '').slice(0, 2))}
+                />
+              </Field>
+            </div>
+          </div>
         )}
       </div>
       <div className="dots-steps" aria-hidden="true">

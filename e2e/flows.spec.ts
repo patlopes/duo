@@ -15,24 +15,26 @@ test.beforeEach(async ({ page }, testInfo) => {
   await simulateSafeArea(page, testInfo);
 });
 
-test('onboarding: passa pelas 3 telas e cria as contas com os nomes', async ({ page }) => {
+test('onboarding: salários de cada um viram a renda somada do casal', async ({ page }) => {
   await page.goto('./');
-  await expect(page.getByText('Lance um gasto em segundos')).toBeVisible();
+  await expect(page.getByText('As contas que vocês pagam juntos')).toBeVisible();
   await page.getByRole('button', { name: 'Continuar' }).click();
-  await expect(page.getByText('Dividam de um jeito justo')).toBeVisible();
+  await expect(page.getByText('Sem fazer conta')).toBeVisible();
   await page.getByRole('button', { name: 'Continuar' }).click();
-  await expect(page.getByText('Realizem sonhos juntos')).toBeVisible();
+  await expect(page.getByText('Vejam o mês que vem de longe')).toBeVisible();
   await page.getByRole('button', { name: 'Continuar' }).click();
+  await page.getByRole('textbox', { name: 'Seu salário' }).fill('700000');
   await page.getByRole('textbox', { name: 'Nome de quem divide com você' }).fill('Ana');
+  await page.getByRole('textbox', { name: 'Salário de quem divide com você' }).fill('300000');
   await page.getByRole('button', { name: 'Começar' }).click();
 
   await expectActiveTitle(page, 'Início');
-  await expect(page.getByText('Conta de Patrick')).toBeVisible();
-  await expect(page.getByText('Conta de Ana')).toBeVisible();
+  await expect(page.getByText('Juntos, vocês têm')).toBeVisible();
+  await expect(page.locator('.hero-amount')).toHaveText('R$ 10.000,00');
 
   await page.reload();
   await expectActiveTitle(page, 'Início');
-  await expect(page.getByText('Lance um gasto em segundos')).toBeHidden();
+  await expect(page.getByText('As contas que vocês pagam juntos')).toBeHidden();
 });
 
 test('lança despesa com no máximo 4 toques depois do +, sem contar os dígitos', async ({
@@ -54,7 +56,7 @@ test('lança despesa com no máximo 4 toques depois do +, sem contar os dígitos
   await expect(page.getByRole('group', { name: 'Teclado de valor' })).toBeHidden();
   await expect(page.getByText('-R$ 45,90').first()).toBeVisible();
   await gotoTab(page, 'Lançamentos');
-  await expect(page.getByText('Mercado').first()).toBeVisible();
+  await expect(page.getByText('Mercado').locator('visible=true').first()).toBeVisible();
 });
 
 test('10 gastos em menos de 1 minuto com "Salvar e criar outro"', async ({ page }) => {
@@ -112,9 +114,15 @@ test('transferência muda os dois saldos e não conta como gasto', async ({ page
   await typeAmount(page, '25000');
   await saveForm(page);
 
+  await gotoTab(page, 'Mais');
+  await page
+    .getByRole('link', { name: /Contas/ })
+    .first()
+    .click();
+  await expectActiveTitle(page, 'Contas');
   const row = (name: string) => page.locator('a.row', { hasText: name });
-  await expect(row('Conta de Patrick').getByText('-R$ 250,00')).toBeVisible();
-  await expect(row('Conta de Pessoa B').getByText('R$ 250,00')).toBeVisible();
+  await expect(row('Conta conjunta').getByText('-R$ 250,00')).toBeVisible();
+  await expect(row('Conta de Patrick').getByText('R$ 250,00')).toBeVisible();
 });
 
 test('compra parcelada no cartão, limite e pagamento da fatura', async ({ page }) => {

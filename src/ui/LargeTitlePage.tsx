@@ -8,6 +8,7 @@ import {
   IonToolbar,
 } from '@ionic/react';
 import type { ReactNode } from 'react';
+import { useLocation } from 'react-router-dom';
 
 interface LargeTitlePageProps {
   title: string;
@@ -17,15 +18,23 @@ interface LargeTitlePageProps {
   children: ReactNode;
 }
 
+/** A parent written as `/tabs/more/x` becomes `/tabs/home/x` when the screen was opened from Início. */
+function parentInTab(backHref: string, pathname: string): string {
+  const tab = pathname.match(/^\/tabs\/(home|planning|more)(\/|$)/)?.[1];
+  if (!tab || tab === 'more' || !backHref.startsWith('/tabs/more')) return backHref;
+  return backHref.replace('/tabs/more', `/tabs/${tab}`);
+}
+
 /** The iOS large title that collapses into the toolbar on scroll. */
 export function LargeTitlePage({ title, backHref, toolbarEnd, children }: LargeTitlePageProps) {
+  const { pathname } = useLocation();
   return (
     <IonPage>
       <IonHeader translucent>
         <IonToolbar>
           {backHref && (
             <IonButtons slot="start">
-              <IonBackButton defaultHref={backHref} text="Voltar" />
+              <IonBackButton defaultHref={parentInTab(backHref, pathname)} text="Voltar" />
             </IonButtons>
           )}
           <IonTitle>{title}</IonTitle>

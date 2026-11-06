@@ -46,15 +46,26 @@ export function GroupedBars({
   rows,
   series,
   hidden,
+  onPick,
 }: {
   rows: Record<string, number | string>[];
   series: SeriesDef[];
   hidden: boolean;
+  onPick?: (index: number) => void;
 }) {
+  const pick = (state: unknown) => {
+    const index = Number((state as { activeTooltipIndex?: unknown } | null)?.activeTooltipIndex);
+    if (Number.isInteger(index)) onPick?.(index);
+  };
   return (
     <div className="chart-box">
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={rows} barGap={2} margin={{ top: 8, right: 4, left: -14, bottom: 0 }}>
+        <BarChart
+          data={rows}
+          barGap={2}
+          margin={{ top: 8, right: 4, left: -14, bottom: 0 }}
+          onClick={pick}
+        >
           <CartesianGrid vertical={false} stroke={GRID} />
           <XAxis dataKey="label" tick={AXIS} axisLine={false} tickLine={false} />
           <YAxis
@@ -74,7 +85,8 @@ export function GroupedBars({
               fill={s.color}
               radius={[4, 4, 0, 0]}
               maxBarSize={14}
-              isAnimationActive={false}
+              isAnimationActive
+              animationDuration={700}
             />
           ))}
         </BarChart>
@@ -87,15 +99,21 @@ export function Lines({
   rows,
   series,
   hidden,
+  onPick,
 }: {
   rows: Record<string, number | string>[];
   series: SeriesDef[];
   hidden: boolean;
+  onPick?: (index: number) => void;
 }) {
+  const pick = (state: unknown) => {
+    const index = Number((state as { activeTooltipIndex?: unknown } | null)?.activeTooltipIndex);
+    if (Number.isInteger(index)) onPick?.(index);
+  };
   return (
     <div className="chart-box">
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={rows} margin={{ top: 8, right: 8, left: -14, bottom: 0 }}>
+        <LineChart data={rows} margin={{ top: 8, right: 8, left: -14, bottom: 0 }} onClick={pick}>
           <CartesianGrid vertical={false} stroke={GRID} />
           <XAxis dataKey="label" tick={AXIS} axisLine={false} tickLine={false} minTickGap={24} />
           <YAxis
@@ -118,8 +136,9 @@ export function Lines({
               stroke={s.color}
               strokeWidth={2}
               dot={false}
-              activeDot={{ r: 5 }}
-              isAnimationActive={false}
+              activeDot={{ r: 6 }}
+              isAnimationActive
+              animationDuration={900}
             />
           ))}
         </LineChart>

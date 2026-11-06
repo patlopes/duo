@@ -8,10 +8,12 @@ export function Donut({
   slices,
   size = 132,
   label,
+  onSlice,
 }: {
   slices: Pick<CategorySlice, 'color' | 'share' | 'name'>[];
   size?: number;
   label: string;
+  onSlice?: (index: number) => void;
 }) {
   const stroke = 22;
   const radius = (size - stroke) / 2;
@@ -37,6 +39,9 @@ export function Donut({
               strokeWidth={stroke}
               strokeDasharray={`${dash} ${circumference - dash}`}
               strokeDashoffset={-offsets[i]!}
+              style={onSlice ? { cursor: 'pointer' } : undefined}
+              onClick={onSlice ? () => onSlice(i) : undefined}
+              className="donut-slice"
             />
           );
         })}
