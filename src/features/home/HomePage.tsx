@@ -38,6 +38,7 @@ import { ProgressBar, Section, Sheet } from '../../ui/parts';
 import { useUi } from '../../ui/uiStore';
 import { useToast } from '../../ui/useToast';
 import { useDeleteBill } from '../bills/useDeleteBill';
+import { AccountBar } from '../google/AccountBar';
 import { requestToken } from '../google/googleAuth';
 import { GoogleButton } from '../google/GoogleButton';
 import { runSync, saveToken, useSheetState } from '../google/sheetSession';
@@ -843,6 +844,7 @@ export default function HomePage() {
         <div className="month-pill">
           <MonthPicker />
         </div>
+        <AccountBar />
         <Notices data={data} />
         <Hero plan={plan} data={data} month={month} now={now} />
         {homeBlocks.filter((b) => !hiddenHomeBlocks.includes(b)).map(render)}

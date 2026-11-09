@@ -14,6 +14,7 @@ import {
   connectAccount,
   joinSheet,
   OtherHouseholdError,
+  releaseMember,
   syncWithSheet,
   type CoupleDrive,
   type SheetCells,
@@ -274,6 +275,22 @@ describe('planilha do casal', () => {
         const plans = (await phone.salaryPlans.toArray()).filter((p) => !p.deletedAt);
         expect(plans.map((p) => p.amountCents)).toEqual([900_000]);
       }
+    });
+
+    it('quem entrou com a conta errada devolve o lugar para a pessoa certa', async () => {
+      await connectAccount(drive(null), 'a@x.com', null, phoneA);
+      await connectAccount(drive(null), 'errada@x.com', 'new-sheet', phoneB);
+      expect((await readSettings(phoneB)).deviceMemberIndex).toBe(1);
+
+      await releaseMember(sheet, 'errada@x.com');
+      await syncWithSheet(sheet, phoneA);
+      expect((await readSettings(phoneA)).googleEmails).toEqual(['a@x.com', null]);
+
+      await tick();
+      await connectAccount(drive(null), 'b@x.com', 'new-sheet', phoneB);
+      await syncWithSheet(sheet, phoneA);
+      expect((await readSettings(phoneA)).googleEmails).toEqual(['a@x.com', 'b@x.com']);
+      expect((await readSettings(phoneB)).deviceMemberIndex).toBe(1);
     });
 
     it('entrar de novo no mesmo aparelho não cria nada', async () => {

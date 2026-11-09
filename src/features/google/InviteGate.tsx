@@ -21,7 +21,7 @@ export function InviteGate() {
           <p>Entre com o Gmail que recebeu o convite e vocês passam a ver as mesmas contas.</p>
         </div>
       </div>
-      <GoogleButton />
+      <GoogleButton codeHint />
       <button
         type="button"
         className="link-button"

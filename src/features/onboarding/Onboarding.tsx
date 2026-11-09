@@ -152,6 +152,7 @@ export default function Onboarding() {
       {onSlide ? (
         <div className="stack">
           <GoogleButton
+            codeHint
             // Found a sheet: the data arrived and this screen closes. Otherwise it still needs the names.
             onDone={(result) => result === 'created' && setStep(SLIDES.length)}
           />

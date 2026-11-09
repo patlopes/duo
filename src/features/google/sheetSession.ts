@@ -1,8 +1,10 @@
 import { create } from 'zustand';
 import { db, readSettings } from '../../db/database';
+import { updateSettings } from '../../db/ops';
 import {
   connectAccount,
   OtherHouseholdError,
+  releaseMember,
   syncWithSheet,
   type ConnectResult,
 } from '../../io/sheetSync';
@@ -26,18 +28,18 @@ interface SheetState {
   clearInvite: () => void;
 }
 
-/** Read before the router runs, which would drop the query. Kept in case the page reloads mid-login. */
+/** Read before the router runs, which would drop the query. Kept until used: leaving to fetch Google's code can cost the page. */
 function readInvite(): string | null {
   const url = new URL(location.href);
   const fromLink = url.searchParams.get('convite');
   try {
     if (fromLink) {
-      sessionStorage.setItem(INVITE_KEY, fromLink);
+      localStorage.setItem(INVITE_KEY, fromLink);
       url.searchParams.delete('convite');
       history.replaceState(null, '', url);
       return fromLink;
     }
-    return sessionStorage.getItem(INVITE_KEY);
+    return localStorage.getItem(INVITE_KEY);
   } catch {
     return fromLink;
   }
@@ -59,7 +61,7 @@ export const useSheetState = create<SheetState>((set) => ({
   set: (patch) => set(patch),
   clearInvite: () => {
     try {
-      sessionStorage.removeItem(INVITE_KEY);
+      localStorage.removeItem(INVITE_KEY);
     } catch {
       // Nothing stored, nothing to clear.
     }
@@ -160,24 +162,65 @@ export function runSync(): Promise<void> {
  * After signing in: the whole setup. A person invited to a sheet may still need to pick it once,
  * because Google only lets the app reach files the person handed to it.
  */
-export async function connectSignedIn(token: GoogleToken): Promise<ConnectResult | null> {
+export async function connectSignedIn(
+  token: GoogleToken,
+): Promise<{ result: ConnectResult; email: string } | null> {
   saveToken(token);
-  const invite = useSheetState.getState().invite;
-  const email = await fetchEmail(token.accessToken);
-  const drive = coupleDrive(token.accessToken);
-  let result: ConnectResult | null;
   try {
-    result = await connectAccount(drive, email, invite);
+    const invite = useSheetState.getState().invite;
+    const email = await fetchEmail(token.accessToken);
+    const drive = coupleDrive(token.accessToken);
+    let result: ConnectResult;
+    try {
+      result = await connectAccount(drive, email, invite);
+    } catch (error) {
+      if (!invite || !isNoAccess(error)) throw error;
+      await loadPicker();
+      const picked = await pickCoupleSheet(token.accessToken, invite);
+      if (!picked) {
+        clearToken();
+        return null;
+      }
+      result = await connectAccount(drive, email, picked);
+    }
+    await updateSettings({ googleAccount: email });
+    useSheetState.getState().clearInvite();
+    void runSync();
+    return { result, email };
   } catch (error) {
-    const blocked =
-      invite && error instanceof GoogleApiError && (error.status === 403 || error.status === 404);
-    if (!blocked) throw error;
-    await loadPicker();
-    const picked = await pickCoupleSheet(token.accessToken, invite);
-    if (!picked) return null;
-    result = await connectAccount(drive, email, picked);
+    // A token that couldn't open the sheet must not stay behind and keep failing every minute.
+    clearToken();
+    if (isNoAccess(error)) {
+      throw new Error('Essa conta Google não abriu a planilha deste aparelho. Tente outra conta.', {
+        cause: error,
+      });
+    }
+    throw error;
   }
-  useSheetState.getState().clearInvite();
-  void runSync();
-  return result;
+}
+
+const isNoAccess = (error: unknown) =>
+  error instanceof GoogleApiError && (error.status === 403 || error.status === 404);
+
+/** Back to before signing in. What's on this device stays; only the link to the account goes. */
+export async function signOutGoogle(): Promise<void> {
+  const { googleSheetId, googleAccount } = await readSettings(db);
+  const token = currentToken();
+  if (token && googleSheetId && googleAccount) {
+    // Best effort: without internet the place stays taken, and that must not block leaving.
+    await releaseMember(sheetStore(token, googleSheetId), googleAccount).catch(() => undefined);
+  }
+  clearToken();
+  try {
+    localStorage.removeItem(SYNCED_KEY);
+  } catch {
+    // Only the "last updated" label would stay.
+  }
+  await updateSettings({
+    googleSheetId: null,
+    googleAccount: null,
+    googleEmails: [null, null],
+    googlePromptDismissed: false,
+  });
+  useSheetState.getState().set({ status: 'idle', message: '', syncedAt: null });
 }

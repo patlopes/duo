@@ -23,7 +23,9 @@ async function fakeGoogle(page: Page, options: FakeOptions) {
     window.fetch = async (input, init) => {
       const url = decodeURIComponent(String(input));
       const body = init?.body ? JSON.parse(String(init.body)) : {};
-      if (url.includes('oauth2/v3/userinfo')) return Response.json({ email: o.email });
+      if (url.includes('oauth2/v3/userinfo')) {
+        return Response.json({ email: localStorage.getItem('fake-email') ?? o.email });
+      }
       if (url.includes('/permissions')) {
         store.invited.push(body.emailAddress);
         return Response.json({ id: 'p1' });
@@ -196,4 +198,69 @@ test('quando o login vence, a Início pede um toque e sincroniza', async ({ page
   await expect
     .poll(() => page.evaluate(() => localStorage.getItem('duo-google-token')))
     .toContain('fake');
+});
+
+test('conta errada: Sair fica visível, os dados ficam e dá para entrar com a certa', async ({
+  page,
+}, testInfo) => {
+  await simulateSafeArea(page, testInfo);
+  await fakeGoogle(page, { email: 'errada@example.com' });
+  await page.goto('./');
+  await page.locator('.onboarding').getByRole('button', { name: 'Entrar com Google' }).click();
+  await page.getByRole('button', { name: 'Começar' }).click();
+  await expectActiveTitle(page, 'Início');
+
+  const bar = page.locator('.account-bar').locator('visible=true');
+  await expect(bar).toContainText('errada@example.com');
+  await page.getByRole('button', { name: 'Conta', exact: true }).click();
+  await page.getByRole('textbox', { name: 'Nome da conta' }).fill('Fica no aparelho');
+  await page.getByRole('textbox', { name: 'Valor da conta' }).fill('10000');
+  await page.locator('ion-modal').getByRole('button', { name: 'Salvar' }).click();
+  await expect(page.locator('.bucket-head').first()).toBeVisible();
+
+  await bar.getByRole('button', { name: 'Sair' }).click();
+  await page.locator('ion-alert').getByRole('button', { name: 'Sair' }).click();
+  await expect(bar).toHaveCount(0);
+  await expect(page.locator('.bucket-head').first()).toBeVisible();
+  await expect
+    .poll(async () => JSON.stringify(await sheetRows(page)))
+    .not.toContain('errada@example.com');
+
+  await page.evaluate(() => localStorage.setItem('fake-email', 'certa@example.com'));
+  await page.getByRole('button', { name: 'Entrar com Google' }).click();
+  await expect(bar).toContainText('certa@example.com');
+  await expect(page.getByRole('button', { name: 'Sair' }).locator('visible=true')).toBeVisible();
+});
+
+test('a barra da conta também aparece no Mais', async ({ page }, testInfo) => {
+  await simulateSafeArea(page, testInfo);
+  await firstPhone(page);
+  await page.locator('ion-tab-button', { hasText: 'Mais' }).click();
+  await expectActiveTitle(page, 'Mais');
+  await expect(page.locator('.account-bar').locator('visible=true')).toContainText(
+    'patrick@example.com',
+  );
+});
+
+test('fechar o site no meio do login não perde o convite nem trava o botão', async ({
+  page,
+  context,
+}, testInfo) => {
+  await simulateSafeArea(page, testInfo);
+  await page.addInitScript(() => {
+    (window as unknown as { google: unknown }).google = {
+      accounts: { oauth2: { initTokenClient: () => ({ requestAccessToken: () => undefined }) } },
+    };
+  });
+  await page.goto('./?convite=fake-sheet');
+  const enter = page.locator('.invite-gate').getByRole('button', { name: 'Entrar com Google' });
+  await expect(page.locator('.invite-gate').getByText('não feche a janela dele')).toBeVisible();
+  await enter.click();
+  // Google's window died without telling anyone: the button can't be left disabled.
+  await expect(enter).toBeEnabled();
+
+  await page.close();
+  const again = await context.newPage();
+  await again.goto('./');
+  await expect(again.getByText('Você foi convidado')).toBeVisible();
 });

@@ -4,10 +4,10 @@ import { useToast } from '../../ui/useToast';
 import { loadGoogle, requestToken } from './googleAuth';
 import { connectSignedIn } from './sheetSession';
 
-const TOAST: Record<ConnectResult, string> = {
-  created: 'Pronto: seus dados agora ficam na sua conta Google.',
-  joined: 'Pronto: seus dados chegaram.',
-  already: 'Pronto: tudo em dia.',
+const TOAST: Record<ConnectResult, (email: string) => string> = {
+  created: (email) => `Pronto: conectado como ${email}.`,
+  joined: (email) => `Pronto: seus dados chegaram em ${email}.`,
+  already: (email) => `Pronto: conectado como ${email}.`,
 };
 
 /** The one sign-in every screen shares: a tap, and the app sorts out the rest. */
@@ -29,15 +29,22 @@ export function useGoogleConnect() {
   }, []);
 
   // No await before requestToken: Safari only opens Google's window inside the tap.
+  // Not "busy" while that window is up: if it dies unnoticed, the button still has to work.
   const connect = (onDone?: (result: ConnectResult) => void) => {
     setError('');
-    setBusy(true);
     requestToken('select_account')
-      .then(connectSignedIn)
-      .then((result) => {
-        if (!result) return;
-        void presentToast({ message: TOAST[result], duration: 2600, position: 'top' });
-        onDone?.(result);
+      .then((token) => {
+        setBusy(true);
+        return connectSignedIn(token);
+      })
+      .then((connected) => {
+        if (!connected) return;
+        void presentToast({
+          message: TOAST[connected.result](connected.email),
+          duration: 3000,
+          position: 'top',
+        });
+        onDone?.(connected.result);
       })
       .catch((e: unknown) =>
         setError(e instanceof Error ? e.message : 'Não deu certo agora. Tentem de novo.'),

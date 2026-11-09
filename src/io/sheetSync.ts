@@ -217,6 +217,19 @@ async function claimMember(store: SheetStore, index: 0 | 1, email: string): Prom
   else await store.append([cells]);
 }
 
+/** Gives a place back, so an account that signed in by mistake doesn't keep standing for someone. */
+export async function releaseMember(store: SheetStore, email: string): Promise<void> {
+  const remote = readRemote(await store.read());
+  const emails = emailsIn(remote);
+  const updates = ([0, 1] as const)
+    .filter((index) => emails[index] === email)
+    .map((index) => ({
+      rowNumber: remote.get(`${SETTINGS_ROW}/${emailRowId(index)}`)!.rowNumber,
+      cells: [SETTINGS_ROW, emailRowId(index), new Date().toISOString(), '', ''] as SheetCells,
+    }));
+  if (updates.length) await store.update(updates);
+}
+
 /** The parts of Google that connecting needs, so tests can run it without an account. */
 export interface CoupleDrive {
   find(): Promise<string | null>;

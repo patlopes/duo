@@ -47,7 +47,8 @@ declare global {
 
 const MESSAGES: Record<string, string> = {
   popup_failed_to_open: 'O aparelho bloqueou a janela do Google.',
-  popup_closed: 'A janela do Google foi fechada antes de terminar.',
+  popup_closed:
+    'A janela do Google fechou antes de terminar. Toque de novo. Se ele pedir um código, deixe a janela aberta e veja o e-mail em outra aba ou app.',
   access_denied: 'O Google negou o acesso. Confira se este e-mail é usuário de teste do projeto.',
 };
 

@@ -23,6 +23,7 @@ import { BRAND } from '../../brand';
 import { useData } from '../../db/DataContext';
 import { LargeTitlePage } from '../../ui/LargeTitlePage';
 import { Mascot } from '../../ui/Mascot';
+import { AccountBar } from '../google/AccountBar';
 
 interface Item {
   to: string;
@@ -144,6 +145,7 @@ export default function MorePage() {
   return (
     <LargeTitlePage title="Mais">
       <div className="page-pad">
+        <AccountBar />
         {GROUPS.map((group, g) => (
           <div key={group.label} className="rise" style={{ ['--i' as string]: g }}>
             <p className="group-label">{group.label}</p>

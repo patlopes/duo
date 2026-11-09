@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useData } from '../../db/DataContext';
-import { updateSettings } from '../../db/ops';
 import { Section } from '../../ui/parts';
+import { AccountBar } from '../google/AccountBar';
 import { GoogleButton } from '../google/GoogleButton';
-import { clearToken, currentToken, runSync, useSheetState } from '../google/sheetSession';
+import { currentToken, runSync, useSheetState } from '../google/sheetSession';
 import { InviteSheet } from './InviteSheet';
 
 /** One Google sheet both phones read and write, so the couple sees the same numbers. */
@@ -16,12 +16,6 @@ export function SheetSection() {
   const me = settings.deviceMemberIndex;
   const other = members[me === 0 ? 1 : 0];
   const otherEmail = settings.googleEmails[me === 0 ? 1 : 0];
-
-  const disconnect = async () => {
-    clearToken();
-    await updateSettings({ googleSheetId: null });
-    useSheetState.getState().set({ status: 'idle', message: '', syncedAt: null });
-  };
 
   const statusLine =
     status === 'syncing'
@@ -46,6 +40,7 @@ export function SheetSection() {
           </>
         ) : (
           <>
+            <AccountBar />
             {!token && (
               <>
                 <span className="subhead">Entre de novo para atualizar. Nada se perde aqui.</span>
@@ -84,9 +79,6 @@ export function SheetSection() {
             >
               Ver a planilha no Google
             </a>
-            <button type="button" className="link-button" onClick={() => void disconnect()}>
-              Sair da conta Google neste aparelho
-            </button>
           </>
         )}
         <a
